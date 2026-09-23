@@ -3,12 +3,14 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import createModule from "../wasm/firmware_preview.js";
 import { clock24, entityName, liveOf, screenBuiltinName, state } from "../store";
 import { clockText } from "../model/topbar";
+import { getJson } from "../api";
 import type { Tile } from "../types";
 
 const props = defineProps<{ width: number; height: number; dpi?: number; columns: number; rows: number; target?: number; room?: number; mode?: string; tiles?: Tile[] }>();
 const canvas = ref<HTMLCanvasElement | null>(null);
 let module: any = null;
 let raf = 0;
+const forecasts = ref<Record<string, { d?: string; c?: string; h?: number; l?: number; p?: number }[]>>({});
 const domainOf = (tile: Tile) => tile.entity.split(".", 1)[0];
 const stateOf = (tile: Tile) => liveOf(tile.entity);
 const labelOf = (tile: Tile) => tile.name || (domainOf(tile) === "screen" ? screenBuiltinName(tile.entity) : undefined) || entityName(tile.entity);
@@ -29,6 +31,14 @@ function valueOf(tile: Tile) {
   return live.state;
 }
 const modeOf = (tile: Tile) => stateOf(tile)?.state || "";
+const forecastOf = (tile: Tile) => forecasts.value[tile.entity] || [];
+async function loadForecasts() {
+  const weather = (props.tiles || []).filter((tile) => domainOf(tile) === "weather" && displayOf(tile) === "forecast");
+  await Promise.all(weather.map(async (tile) => {
+    try { forecasts.value[tile.entity] = (await getJson<{ days?: any[] }>(`forecast?entity=${encodeURIComponent(tile.entity)}`)).days || []; }
+    catch { forecasts.value[tile.entity] = []; }
+  }));
+}
 
 function paint() {
   if (!module || !canvas.value) return;
@@ -48,6 +58,7 @@ async function start() {
 watch(() => [props.width, props.height, props.dpi, props.columns, props.rows, props.target, props.room, props.mode], () => {
   cancelAnimationFrame(raf); raf = requestAnimationFrame(paint);
 });
+watch(() => props.tiles, loadForecasts, { immediate: true, deep: true });
 onMounted(start);
 onBeforeUnmount(() => cancelAnimationFrame(raf));
 </script>
@@ -59,8 +70,14 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
       <div v-for="tile in (tiles || []).filter((item) => item.slot < columns * rows)" :key="`${tile.entity}-${tile.slot}`"
         class="firmware-tile" :style="{ gridColumn: `${(tile.slot % columns) + 1} / span ${tile.options?.size === 'wide' ? Math.min(2, columns - (tile.slot % columns)) : tile.options?.size === 'full' ? columns : 1}`, gridRow: `${Math.floor(tile.slot / columns) + 1}` }">
         <span class="firmware-tile-name">{{ labelOf(tile) }}</span>
-        <span class="firmware-tile-value">{{ valueOf(tile) }}</span>
+        <span v-if="domainOf(tile) !== 'weather' || displayOf(tile) !== 'forecast'" class="firmware-tile-value">{{ valueOf(tile) }}</span>
         <span v-if="domainOf(tile) === 'climate'" class="firmware-tile-mode">{{ modeOf(tile) }}</span>
+        <span v-if="domainOf(tile) === 'weather' && displayOf(tile) === 'forecast'" class="weather-forecast">
+          <span v-for="(day, index) in forecastOf(tile).slice(0, 5)" :key="`${tile.entity}-${index}`" class="weather-day">
+            <b>{{ day.d || "—" }}</b><span>{{ day.c || "—" }}</span><strong>{{ day.h ?? "—" }}° / {{ day.l ?? "—" }}°</strong><small v-if="day.p !== undefined">{{ day.p }}% rain</small>
+          </span>
+          <span v-if="!forecastOf(tile).length" class="weather-empty">No forecast</span>
+        </span>
       </div>
     </div>
   </div>

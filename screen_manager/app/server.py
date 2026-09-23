@@ -2309,6 +2309,17 @@ def create_app(manager, development=False):
             result[eid] = {'state': message['state'], 'a': message['a'],
                            'word': state_word(eid, state.get('state'), state.get('attributes'), entry, getattr(manager.ha, 'state_words', None))}
         return web.json_response({'states': result})
+    async def forecast_preview(request):
+        """Daily weather data for the local firmware preview; the normal state payload has no forecast list."""
+        entity = request.query.get('entity', '')
+        if not isinstance(entity, str) or not entity.startswith('weather.'):
+            raise ValueError('A weather entity is required.')
+        if not hasattr(manager.ha, 'forecast'):
+            return web.json_response({'days': []})
+        entries = await manager.ha.forecast(entity, 'daily')
+        extra = extras({'entity': entity}, manager.ha.states, forecast=entries,
+                       tz=getattr(manager.ha, 'time_zone', None), now=datetime.now(timezone.utc))
+        return web.json_response(extra or {'days': []})
     def one_alert_target(inbox):
         screen = manager.screen(inbox)
         if screen is None:
@@ -2412,6 +2423,7 @@ def create_app(manager, development=False):
     app.router.add_get('/api/inventory', inventory)
     app.router.add_get('/api/capabilities', capabilities)
     app.router.add_get('/api/states', states)
+    app.router.add_get('/api/forecast', forecast_preview)
     app.router.add_post('/api/screens/{inbox}/identify', identify)
     app.router.add_post('/api/screens/{inbox}/calibrate', calibrate)
     app.router.add_post('/api/alerts/test', test_alert)

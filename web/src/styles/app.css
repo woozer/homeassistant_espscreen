@@ -168,6 +168,12 @@ a:hover { text-decoration: underline; }
 .firmware-tile-value { max-width: 100%; margin-top: .3em; font-size: clamp(14px, 3vw, 32px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .firmware-tile-value:has(+ .firmware-tile-mode) { color: #1b1b1b; }
 .firmware-tile-mode { color: #687079; font-size: clamp(9px, 1.3vw, 14px); }
+.weather-forecast { width: 100%; display: flex; justify-content: space-around; gap: 2%; margin-top: .35em; }
+.weather-day { min-width: 0; display: flex; flex: 1; flex-direction: column; align-items: center; gap: .15em; font-size: clamp(8px, 1.1vw, 13px); }
+.weather-day span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #687079; }
+.weather-day strong { font-size: clamp(9px, 1.25vw, 15px); white-space: nowrap; }
+.weather-day small { color: #4d8fc2; white-space: nowrap; }
+.weather-empty { color: #687079; font-size: clamp(9px, 1.2vw, 14px); }
 .page { flex: 0 0 var(--mockup-width, 292px); display: grid; gap: 8px; }
 .page-label { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--muted); padding: 0 4px; min-height: 22px; }
 /* The cells in use and, from app 0.2.123, Remove page beside them: a page leaves whether it is empty or not, so
