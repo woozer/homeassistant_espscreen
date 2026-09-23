@@ -22,6 +22,7 @@ int weather_count = 0;
 float weather_current = NAN;
 std::string weather_condition;
 bool has_weather = false;
+bool has_climate = false;
 
 void flush(lv_display_t *, const lv_area_t *area, uint8_t *px) {
   const int w = area->x2 - area->x1 + 1;
@@ -98,7 +99,7 @@ void render() {
     lv_obj_set_style_border_color(tile, lv_color_hex(0xDDDDDD), 0);
   }
   if (has_weather) weather_render();
-  if (!has_weather) {
+  if (has_climate && !has_weather) {
     climate_card::Metrics metrics;
     ui::configure(dpi, "standard");
     const auto layout = climate_card::layout(metrics, width, metrics.bar + 12, height - 18, 2, 0, 1);
@@ -131,8 +132,9 @@ void preview_init(int w, int h, int display_dpi) {
   root = lv_screen_active(); render();
 }
 void preview_set_climate(float setpoint, float room, const char *hvac_mode) {
-  target = setpoint; current = room; mode = hvac_mode ? hvac_mode : "heat"; render();
+  target = setpoint; current = room; mode = hvac_mode ? hvac_mode : "heat"; has_climate = true; render();
 }
+void preview_clear_climate() { has_climate = false; }
 void preview_clear_weather() { weather_count = 0; has_weather = false; weather_condition.clear(); }
 void preview_set_weather_current(float temperature, const char *condition) { weather_current = temperature; weather_condition = condition ? condition : ""; has_weather = true; }
 void preview_set_weather_day(int index, const char *day, const char *condition, float high, float low, float rain) {
