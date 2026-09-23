@@ -245,6 +245,17 @@ a:hover { text-decoration: underline; }
 @media (hover: none) { .tile .remove { opacity: 1; } }
 .tile .clockface { width: 46px; height: 46px; margin: auto; }
 .tile.wide .clockface { margin: 0; flex: none; }
+.tile .climate-round { position: relative; display: grid; place-items: center; width: 100%; height: 100%; min-height: 115px; color: #1b1b1b; }
+.tile .climate-round-dial { width: min(100%, 150px); height: min(100%, 150px); transform: rotate(-135deg); overflow: visible; }
+.tile .climate-track, .tile .climate-progress { fill: none; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 170 170; }
+.tile .climate-track { stroke: #e6e8ec; }
+.tile .climate-progress { stroke: #f0a51a; }
+.tile .climate-round-value, .tile .climate-round-current, .tile .climate-round-keys, .tile .climate-round-name { position: absolute; }
+.tile .climate-round-value { top: 35%; font-size: 20px; font-weight: 700; }
+.tile .climate-round-current { top: 52%; font-size: 9px; color: #5a5f66; }
+.tile .climate-round-keys { bottom: 15%; display: flex; gap: 28px; }
+.tile .climate-round-keys b { width: 22px; height: 22px; border-radius: 50%; background: #eceef1; display: grid; place-items: center; font-size: 16px; line-height: 1; }
+.tile .climate-round-name { bottom: 2px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: #5a5f66; }
 .cell { min-height: 0; border: 1px dashed #cfd4da; border-radius: 12px; background: transparent; color: #a3abb5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-weight: 500; cursor: pointer; padding: 6px; }
 .cell span { font-size: 18px; line-height: 1; }
 .cell small { font-size: 10.5px; color: inherit; }

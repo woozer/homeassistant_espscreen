@@ -101,6 +101,21 @@ const setpoint = computed(() => {
   const temperature = current.value?.a?.temperature;
   return temperature !== undefined && temperature !== null ? `${num(temperature)}°` : "—";
 });
+const climateTarget = computed(() => {
+  const n = Number(current.value?.a?.temperature ?? current.value?.a?.target_temperature);
+  return Number.isFinite(n) ? n : undefined;
+});
+const climateCurrent = computed(() => {
+  const n = Number(current.value?.a?.current_temperature);
+  return Number.isFinite(n) ? n : undefined;
+});
+const climateMin = computed(() => Number(current.value?.a?.min_temp ?? 5));
+const climateMax = computed(() => Number(current.value?.a?.max_temp ?? 35));
+const climateProgress = computed(() => {
+  if (climateTarget.value === undefined || climateMax.value <= climateMin.value) return 0;
+  return Math.max(0, Math.min(1, (climateTarget.value - climateMin.value) / (climateMax.value - climateMin.value)));
+});
+const climateDash = computed(() => `${climateProgress.value * 170} 170`);
 
 async function onKey(e: KeyboardEvent) {
   if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTile(props.tile); return; }
@@ -121,7 +136,19 @@ async function onKey(e: KeyboardEvent) {
     :style="background && !bare ? { backgroundColor: background } : undefined"
     :tabindex="live ? 0 : -1" :role="live ? 'button' : undefined" :aria-label="live ? label : undefined"
     v-drag="{ kind: 'tile', tile }" @click="live && openTile(tile)" @keydown="live && onKey($event)">
-    <template v-if="display === 'analog'">
+    <template v-if="display === 'round' && domain === 'climate'">
+      <div class="climate-round" aria-hidden="true">
+        <svg viewBox="0 0 100 100" class="climate-round-dial">
+          <circle cx="50" cy="50" r="40" class="climate-track" />
+          <circle cx="50" cy="50" r="40" class="climate-progress" :style="{ strokeDasharray: climateDash }" />
+        </svg>
+        <span class="climate-round-value">{{ climateTarget !== undefined ? `${num(climateTarget)}°` : "—" }}</span>
+        <span class="climate-round-current">{{ climateCurrent !== undefined ? `now ${num(climateCurrent)}°` : status }}</span>
+        <span class="climate-round-keys"><b>−</b><b>+</b></span>
+        <span class="climate-round-name">{{ name }}</span>
+      </div>
+    </template>
+    <template v-else-if="display === 'analog'">
       <svg class="clockface" viewBox="0 0 60 60" aria-hidden="true">
         <circle cx="30" cy="30" r="27" fill="#fff" stroke="#c9ccd1" />
         <line v-for="a in [0, 90, 180, 270]" :key="a" x1="30" y1="5" x2="30" y2="9" stroke="#1b1b1b" stroke-width="1.5" :transform="`rotate(${a} 30 30)`" />

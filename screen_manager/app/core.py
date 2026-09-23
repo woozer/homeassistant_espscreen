@@ -97,6 +97,7 @@ def backgrounds():
 
 # Display modes per domain; everything else offers standard and watch (large value).
 DISPLAYS = {'weather': ('standard', 'watch', 'forecast'), 'sensor': ('standard', 'watch', 'graph'), 'screen': ('digital', 'analog'), 'sun': ('standard', 'watch', 'sunpath'),
+            'climate': ('standard', 'round'),
             'camera': ('standard', 'live'), 'image': ('standard', 'live'), 'media_player': ('standard', 'watch', 'cover')}
 # Displays that only work on a double-width card.
 WIDE_ONLY = ('forecast', 'sunpath')

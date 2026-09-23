@@ -2124,7 +2124,64 @@ inline void climate_hold(lv_event_t *e){
   if(!fresh()||!t.available()||esphome::millis()-t.edit_since<300)return;
   climate_step(t,direction);
 }
+// The optional round climate control: the arc is a target-temperature picker, not a decorative gauge. The
+// value is snapped to Home Assistant's advertised step and uses the same delayed service action as -/+.
+inline lv_obj_t *climate_dial=nullptr;
+inline void climate_dial_event(lv_event_t *e){
+  if(lv_event_get_code(e)!=LV_EVENT_VALUE_CHANGED||detail_index>=model.count)return;
+  auto &t=model.tiles[detail_index];
+  if(!fresh()||!t.available())return;
+  const float minimum=std::isfinite(t.minimum)?t.minimum:5.0f, maximum=std::isfinite(t.maximum)?t.maximum:35.0f;
+  const float step=tile_controls::edit_step(t);
+  const float raw=minimum+(maximum-minimum)*lv_arc_get_value(static_cast<lv_obj_t *>(lv_event_get_target(e)))/1000.0f;
+  const float snapped=std::clamp(minimum+std::round((raw-minimum)/step)*step,minimum,maximum);
+  t.edit_value=snapped;t.edit_since=esphome::millis();t.edit_sent=false;
+  if(climate_number)label(climate_number,climate_number_text(t));
+}
+inline void render_climate_round_detail(Tile &t,bool large,int width,int height,int columns){
+  const lv_font_t *text=large?detail_font:(control_font?control_font:detail_font);
+  const lv_font_t *number_font=setpoint_font?setpoint_font:(watch_font?watch_font:detail_font);
+  const lv_font_t *small=small_font?small_font:text;
+  const lv_font_t *mini=mini_icon_font?mini_icon_font:detail_font;
+  const climate_card::Metrics m=climate_metrics(large);
+  const int top=climate_top(m), pad=ui::px(large?20:10);
+  const int available_h=std::max(ui::px(120),height-top-m.margin());
+  const int dial_size=std::min(width-2*pad,available_h);
+  const int dial_x=(width-dial_size)/2, dial_y=top+(available_h-dial_size)/2;
+  const bool off=tile_controls::climate_off(t);
+  detail_placed=true;
+  climate_round_key({width-m.bar_x-m.bar,m.bar_y,m.bar,m.bar},tile_controls::glyph::POWER,mini,
+                    off?theme::KEY:theme::ACCENT_TINT,off?theme::ICON_OFF:theme::ACCENT_ICON,CLIMATE_POWER);
+  climate_dial=lv_arc_create(detail_root);lv_obj_remove_style_all(climate_dial);
+  lv_obj_set_pos(climate_dial,dial_x,dial_y);lv_obj_set_size(climate_dial,dial_size,dial_size);
+  lv_arc_set_range(climate_dial,0,1000);lv_arc_set_bg_angles(climate_dial,135,405);lv_arc_set_rotation(climate_dial,0);
+  lv_obj_set_style_arc_width(climate_dial,ui::px(14),LV_PART_MAIN);lv_obj_set_style_arc_width(climate_dial,ui::px(14),LV_PART_INDICATOR);
+  lv_obj_set_style_arc_color(climate_dial,theme::color(theme::TRACK),LV_PART_MAIN);
+  lv_obj_set_style_arc_color(climate_dial,lv_color_hex(tile_controls::mode_color(t.state)),LV_PART_INDICATOR);
+  lv_obj_set_style_arc_opa(climate_dial,LV_OPA_COVER,LV_PART_MAIN);lv_obj_set_style_arc_opa(climate_dial,LV_OPA_COVER,LV_PART_INDICATOR);
+  lv_obj_set_style_bg_opa(climate_dial,LV_OPA_TRANSP,0);lv_obj_set_style_border_width(climate_dial,0,0);
+  lv_obj_set_style_bg_color(climate_dial,theme::color(theme::ACCENT),LV_PART_KNOB);lv_obj_set_style_bg_opa(climate_dial,LV_OPA_COVER,LV_PART_KNOB);
+  const float target=std::isfinite(t.edit_value)?t.edit_value:tile_controls::edit_target(t);
+  const float minimum=std::isfinite(t.minimum)?t.minimum:5.0f, maximum=std::isfinite(t.maximum)?t.maximum:35.0f;
+  const int dial_value=std::isfinite(target)?(int)std::lround(std::clamp((target-minimum)/(maximum-minimum),0.0f,1.0f)*1000.0f):0;
+  lv_arc_set_value(climate_dial,dial_value);lv_obj_add_event_cb(climate_dial,climate_dial_event,LV_EVENT_VALUE_CHANGED,nullptr);
+  const int number_w=std::min(width-ui::px(90),ui::px(180));
+  climate_number=detail_text(detail_root,climate_number_text(t),(width-number_w)/2,dial_y+dial_size/2-ui::px(32),number_w,number_font,LV_TEXT_ALIGN_CENTER,off?theme::OFF:theme::INK);
+  const std::string current=std::isfinite(t.current)?screen_text::decimal(t.current,1)+"°":"";
+  detail_text(detail_root,current,(width-number_w)/2,dial_y+dial_size/2+ui::px(20),number_w,small,LV_TEXT_ALIGN_CENTER,theme::MUTED);
+  const int key=std::min(ui::px(56),std::max(m.touch,dial_size/5));
+  auto *down=climate_round_key({dial_x+ui::px(8),dial_y+dial_size-key-ui::px(4),key,key},tile_controls::glyph::MINUS,mini,theme::TRACK,theme::INK,CLIMATE_DOWN);
+  auto *up=climate_round_key({dial_x+dial_size-key-ui::px(8),dial_y+dial_size-key-ui::px(4),key,key},tile_controls::glyph::PLUS,mini,theme::TRACK,theme::INK,CLIMATE_UP);
+  lv_obj_add_event_cb(down,climate_hold,LV_EVENT_LONG_PRESSED_REPEAT,(void*)(intptr_t)-1);
+  lv_obj_add_event_cb(up,climate_hold,LV_EVENT_LONG_PRESSED_REPEAT,(void*)(intptr_t)1);
+  const std::string status=tile_controls::climate_card_status(t,true);
+  detail_text(detail_root,status,(width-number_w)/2,dial_y+dial_size+ui::px(4),number_w,small,LV_TEXT_ALIGN_CENTER,theme::MUTED);
+}
 inline void render_climate_detail(Tile &t,bool large,int width,int height,int columns){
+  if(t.display=="round"){
+    render_climate_round_detail(t,large,width,height,columns);
+    return;
+  }
   const lv_font_t *text=large?detail_font:(control_font?control_font:detail_font);
   const lv_font_t *small=small_font?small_font:text;
   const lv_font_t *number_font=setpoint_font?setpoint_font:(watch_font?watch_font:detail_font);
@@ -2771,7 +2828,7 @@ inline void show_detail(unsigned index){
   }
   lv_obj_set_style_bg_color(detail_backdrop,theme::color(theme::PAGE),0);lv_obj_set_style_bg_opa(detail_backdrop,LV_OPA_COVER,0);
   lv_obj_remove_flag(detail_backdrop,LV_OBJ_FLAG_HIDDEN);lv_obj_move_foreground(detail_backdrop);
-  detail_action_count=0;detail_status=nullptr;detail_badge_status=nullptr;detail_switch=nullptr;climate_number=nullptr;detail_placed=false;detail_status_brief=false;history_forget();
+  detail_action_count=0;detail_status=nullptr;detail_badge_status=nullptr;detail_switch=nullptr;climate_number=nullptr;climate_dial=nullptr;detail_placed=false;detail_status_brief=false;history_forget();
   media_progress_fill=nullptr;media_elapsed_label=nullptr;media_detail_picture=nullptr;weather_days_card=nullptr;weather_dots=nullptr;weather_chevron[0]=weather_chevron[1]=nullptr;light_value=nullptr;lv_obj_clean(detail_root);lv_obj_remove_flag(detail_root,LV_OBJ_FLAG_HIDDEN);lv_obj_move_foreground(detail_root);
   lv_obj_set_style_bg_color(detail_root,theme::color(theme::PAGE),0);lv_obj_set_style_bg_opa(detail_root,LV_OPA_COVER,0);
   // The card's room: capped to what a hand spans and centred, unless it shows a picture (the media card's

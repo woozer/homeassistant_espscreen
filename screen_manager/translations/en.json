@@ -1280,6 +1280,7 @@
     },
     "displays": {
       "standard": "standard",
+      "round": "round thermostat",
       "watch": "large value",
       "forecast": "weather forecast",
       "graph": "graph",
