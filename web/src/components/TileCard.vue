@@ -1,11 +1,12 @@
 <script setup lang="ts">
 // A card on the mockup, drawn with what Home Assistant reports right now. A placeholder is the tile being
 // dragged, drawn where it will land.
-import { computed, nextTick } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { vDrag } from "../drag";
 import { numberText, t, te } from "../i18n";
 import { displayName, effectiveControls, grid, isFull, isWide, pageOf, pageTarget } from "../model/layout";
 import { clockText, glyph } from "../model/topbar";
+import { getJson } from "../api";
 import { clock24, entityName, isSelected, liveOf, numberMarks, openTile, placeTile, removeTile, screenBuiltinName, screenText, state, tileIconCp, unitSuffix } from "../store";
 import type { Tile } from "../types";
 
@@ -116,6 +117,13 @@ const climateProgress = computed(() => {
   return Math.max(0, Math.min(1, (climateTarget.value - climateMin.value) / (climateMax.value - climateMin.value)));
 });
 const climateDash = computed(() => `${climateProgress.value * 170} 170`);
+const forecast = ref<{ d?: string; c?: string; h?: number; l?: number; p?: number }[]>([]);
+async function loadForecast() {
+  if (domain.value !== "weather" || display.value !== "forecast") { forecast.value = []; return; }
+  try { forecast.value = (await getJson<{ days?: typeof forecast.value }>(`forecast?entity=${encodeURIComponent(props.tile.entity)}`)).days || []; }
+  catch { forecast.value = []; }
+}
+watch(() => [props.tile.entity, display.value], loadForecast, { immediate: true });
 
 async function onKey(e: KeyboardEvent) {
   if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTile(props.tile); return; }
@@ -146,6 +154,17 @@ async function onKey(e: KeyboardEvent) {
         <span class="climate-round-current">{{ climateCurrent !== undefined ? `now ${num(climateCurrent)}°` : status }}</span>
         <span class="climate-round-keys"><b>−</b><b>+</b></span>
         <span class="climate-round-name">{{ name }}</span>
+      </div>
+    </template>
+    <template v-else-if="display === 'forecast' && domain === 'weather'">
+      <div class="weather-editor-forecast" aria-hidden="true">
+        <span class="weather-editor-title">{{ name }}</span>
+        <span class="weather-editor-days">
+          <span v-for="(day, index) in forecast.slice(0, 5)" :key="`${tile.entity}-${index}`" class="weather-editor-day">
+            <b>{{ day.d || "—" }}</b><span>{{ day.c || "—" }}</span><strong>{{ day.h ?? "—" }}° / {{ day.l ?? "—" }}°</strong><small v-if="day.p !== undefined">{{ day.p }}% rain</small>
+          </span>
+          <span v-if="!forecast.length" class="weather-editor-empty">No forecast</span>
+        </span>
       </div>
     </template>
     <template v-else-if="display === 'analog'">
