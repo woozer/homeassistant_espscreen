@@ -8,6 +8,7 @@
 #include "lvgl.h"
 #include "../../components/smart_display/climate_card.h"
 #include "../../components/smart_display/weather_card.h"
+#include "generated/mdi_weather_28.c"
 
 namespace {
 lv_display_t *display = nullptr;
@@ -46,10 +47,12 @@ void card(lv_obj_t *parent, int x, int y, int w, int h) {
   lv_obj_set_style_bg_opa(item, LV_OPA_COVER, 0); lv_obj_set_style_border_width(item, 0, 0);
 }
 const char *weather_glyph(const std::string &condition) {
-  if (condition == "sunny") return "☀"; if (condition == "clear-night") return "☾";
-  if (condition == "cloudy") return "☁"; if (condition == "partlycloudy") return "◐";
-  if (condition == "rainy" || condition == "pouring") return "☂"; if (condition == "snowy") return "❄";
-  return "·";
+  if (condition == "sunny") return "\U000F0599"; if (condition == "clear-night") return "\U000F0594";
+  if (condition == "cloudy") return "\U000F0590"; if (condition == "partlycloudy") return "\U000F0595";
+  if (condition == "rainy") return "\U000F0597"; if (condition == "pouring") return "\U000F0596";
+  if (condition == "snowy") return "\U000F0598"; if (condition == "fog") return "\U000F0591";
+  if (condition == "lightning") return "\U000F0593"; if (condition == "windy") return "\U000F059D";
+  return "\U000F0595";
 }
 const char *weather_text(const std::string &condition) {
   if (condition == "partlycloudy") return "Partly cloudy"; if (condition == "clear-night") return "Clear night";
@@ -66,7 +69,7 @@ void weather_render() {
   card(root, x, y, w, h);
   const int pad = std::max(12, width / 45), current_w = std::max(110, w * 28 / 100);
   char value[24]; std::snprintf(value, sizeof(value), "%.0f°", weather_current);
-  label(root, weather_glyph(weather_condition), x + pad, y + h / 2 - 24, 48, 42, &lv_font_montserrat_28, lv_color_hex(0x1B1B1B));
+  label(root, weather_glyph(weather_condition), x + pad, y + h / 2 - 24, 48, 42, &mdi_weather_28, lv_color_hex(0x1B1B1B));
   label(root, value, x + pad + 48, y + h / 2 - 24, current_w - 48, 42, &lv_font_montserrat_28, lv_color_hex(0x1B1B1B));
   label(root, weather_text(weather_condition), x + pad, y + h / 2 + 20, current_w - pad, 24, &lv_font_montserrat_14, lv_color_hex(0x5A5F66));
   const int count = std::min(5, weather_count), days_x = x + current_w, days_w = w - current_w - pad;
@@ -74,7 +77,7 @@ void weather_render() {
   for (int i = 0; i < count; ++i) {
     const auto &day = weather_days[i]; const int dx = days_x + i * column;
     label(root, day.day.c_str(), dx, y + 24, column, 24, &lv_font_montserrat_14, lv_color_hex(0x1B1B1B));
-    label(root, weather_glyph(day.condition), dx, y + 48, column, 30, &lv_font_montserrat_28, lv_color_hex(0x1B1B1B));
+    label(root, weather_glyph(day.condition), dx, y + 48, column, 30, &mdi_weather_28, lv_color_hex(0x1B1B1B));
     char temps[32]; std::snprintf(temps, sizeof(temps), "%.0f/%.0f", day.high, day.low);
     label(root, temps, dx, y + 78, column, 24, &lv_font_montserrat_14, lv_color_hex(0x5A5F66));
     if (std::isfinite(day.rain)) { char rain[16]; std::snprintf(rain, sizeof(rain), "%.0f%%", day.rain); label(root, rain, dx, y + 101, column, 18, &lv_font_montserrat_14, lv_color_hex(0x4D8FC2)); }
