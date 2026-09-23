@@ -28,5 +28,5 @@ for source in $(find "$LVGL/src" -name '*.c' -print); do
 done
 em++ -O2 $OBJECTS \
   -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_FUNCTIONS='["_preview_init","_preview_set_profile","_preview_set_climate","_preview_render","_preview_frame","_preview_width","_preview_height"]' \
-  -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' -sMODULARIZE=1 -sEXPORT_ES6=1 \
+  -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' -sENVIRONMENT=web -sMODULARIZE=1 -sEXPORT_ES6=1 \
   -o "$OUT/firmware_preview.js"
