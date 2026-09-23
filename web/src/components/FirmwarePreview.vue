@@ -82,6 +82,9 @@ watch(() => [props.width, props.height, props.dpi, props.columns, props.rows, pr
   cancelAnimationFrame(raf); raf = requestAnimationFrame(paint);
 });
 watch(() => props.tiles, loadForecasts, { immediate: true, deep: true });
+watch(forecasts, () => {
+  cancelAnimationFrame(raf); raf = requestAnimationFrame(paint);
+}, { deep: true });
 onMounted(start);
 onBeforeUnmount(() => cancelAnimationFrame(raf));
 </script>
