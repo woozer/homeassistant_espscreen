@@ -301,7 +301,7 @@ onBeforeUnmount(() => clearInterval(poll));
           <div class="boards">
             <label class="board"><input type="radio" name="virtual-profile" value="waveshare4b-landscape" :checked="form.board === 'waveshare4b' && form.orientation === 'landscape'" @change="form.board = 'waveshare4b'; form.orientation = 'landscape'" /><span><b>Waveshare 4B</b><small>800 × 480 · 2 × 3 · landscape</small></span></label>
             <label class="board"><input type="radio" name="virtual-profile" value="waveshare4b-portrait" :checked="form.board === 'waveshare4b' && form.orientation === 'portrait'" @change="form.board = 'waveshare4b'; form.orientation = 'portrait'" /><span><b>Waveshare 4B portrait</b><small>480 × 800 · 1 × 4</small></span></label>
-            <label class="board"><input type="radio" name="virtual-profile" value="virtual720" v-model="form.board" @change="form.orientation = 'landscape'" /><span><b>720 × 720 virtual panel</b><small>3 × 3 · editor preview</small></span></label>
+            <label class="board"><input type="radio" name="virtual-profile" value="virtual720" v-model="form.board" @change="form.orientation = 'landscape'" /><span><b>Waveshare ESP32-P4-WIFI6-Touch-LCD-4B</b><small>720 × 720 · 3 × 3 · editor preview</small></span></label>
           </div>
         </fieldset>
         <div class="field">
