@@ -91,6 +91,7 @@ const VIRTUAL_SHAPES: Record<string, Record<string, NonNullable<Screen["shape"]>
   waveshare7: { landscape: { width: 800, height: 480, columns: 3, rows: 2, dpi: 170, look: "standard" } },
   guition: { landscape: { width: 480, height: 480, columns: 2, rows: 3, dpi: 254, look: "standard" } },
   cyd: { landscape: { width: 320, height: 240, columns: 2, rows: 3, dpi: 143, look: "compact" } },
+  virtual720: { landscape: { width: 720, height: 720, columns: 3, rows: 3, dpi: 254, look: "standard" } },
 };
 export function createVirtualScreen(name: string, board: string, orientation: Orientation = "landscape") {
   const shape = VIRTUAL_SHAPES[board]?.[orientation] || VIRTUAL_SHAPES.waveshare4b.landscape;
