@@ -14,6 +14,7 @@ const page = ref(0);
 const pointerStart = ref<number | null>(null);
 const pageCount = computed(() => Math.max(1, props.pages || 1));
 const pageTiles = computed(() => (props.tiles || []).filter((tile) => Math.floor(tile.slot / (props.columns * props.rows)) === page.value));
+const visualTiles = computed(() => pageTiles.value.filter((tile) => !(domainOf(tile) === "weather" && displayOf(tile) === "forecast")));
 const forecasts = ref<Record<string, { d?: string; c?: string; h?: number; l?: number; p?: number }[]>>({});
 const domainOf = (tile: Tile) => tile.entity.split(".", 1)[0];
 const stateOf = (tile: Tile) => liveOf(tile.entity);
@@ -59,6 +60,13 @@ function paint() {
   if (!module || !canvas.value) return;
   module._preview_set_profile(props.columns, props.rows);
   module._preview_set_climate(props.target ?? 21, props.room ?? 20, props.mode || "heat");
+  module._preview_clear_weather();
+  const weather = pageTiles.value.find((tile) => domainOf(tile) === "weather" && displayOf(tile) === "forecast");
+  if (weather) {
+    const live = stateOf(weather);
+    module.ccall("preview_set_weather_current", "void", ["number", "string"], [Number(live?.a?.temperature ?? 0), weatherCondition(weather)]);
+    forecastOf(weather).slice(0, 5).forEach((day, index) => module.ccall("preview_set_weather_day", "void", ["number", "string", "string", "number", "number", "number"], [index, day.d || "", day.c || "", Number(day.h ?? NaN), Number(day.l ?? NaN), Number(day.p ?? NaN)]));
+  }
   module._preview_render();
   const context = canvas.value.getContext("2d");
   if (!context) return;
@@ -82,7 +90,7 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
   <div class="firmware-preview" :style="{ aspectRatio: `${width} / ${height}` }" @pointerdown="swipeStart" @pointerup="swipeEnd">
     <canvas ref="canvas" :width="width" :height="height" aria-label="LVGL firmware preview"></canvas>
     <div class="firmware-overlay" :style="{ gridTemplateColumns: `repeat(${columns}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }" aria-label="Configured tiles">
-      <div v-for="tile in pageTiles" :key="`${tile.entity}-${tile.slot}`"
+      <div v-for="tile in visualTiles" :key="`${tile.entity}-${tile.slot}`"
         class="firmware-tile" :class="{ 'firmware-weather-tile': domainOf(tile) === 'weather' && displayOf(tile) === 'forecast' }"
         :style="{ gridColumn: `${(tile.slot % columns) + 1} / span ${tile.options?.size === 'wide' || (domainOf(tile) === 'weather' && displayOf(tile) === 'forecast') ? Math.min(2, columns - (tile.slot % columns)) : tile.options?.size === 'full' ? columns : 1}`, gridRow: `${Math.floor((tile.slot % (columns * rows)) / columns) + 1}` }">
         <span v-if="!(domainOf(tile) === 'weather' && displayOf(tile) === 'forecast')" class="firmware-tile-name">{{ labelOf(tile) }}</span>

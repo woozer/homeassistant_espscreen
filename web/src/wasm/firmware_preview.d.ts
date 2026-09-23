@@ -2,6 +2,9 @@ export type FirmwarePreviewModule = {
   _preview_init(width: number, height: number, dpi: number): void;
   _preview_set_profile(columns: number, rows: number): void;
   _preview_set_climate(target: number, room: number, mode: string): void;
+  _preview_clear_weather(): void;
+  _preview_set_weather_current(temperature: number, condition: string): void;
+  _preview_set_weather_day(index: number, day: string, condition: string, high: number, low: number, rain: number): void;
   _preview_render(): void;
   _preview_frame(): number;
   _preview_width(): number;
