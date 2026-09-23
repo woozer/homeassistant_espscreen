@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import createModule from "../wasm/firmware_preview.js";
 import { clock24, entityName, liveOf, screenBuiltinName, state } from "../store";
-import { clockText } from "../model/topbar";
+import { clockText, glyph } from "../model/topbar";
 import { getJson } from "../api";
 import type { Tile } from "../types";
 
@@ -16,6 +16,7 @@ const pageCount = computed(() => Math.max(1, props.pages || 1));
 const configuredTiles = computed(() => (props.tiles && props.tiles.length ? props.tiles : state.layout?.tiles || []));
 const pageTiles = computed(() => configuredTiles.value.filter((tile) => Math.floor(tile.slot / (props.columns * props.rows)) === page.value));
 const visualTiles = computed(() => pageTiles.value.filter((tile) => !(domainOf(tile) === "weather" && displayOf(tile) === "forecast")));
+const forecastTile = computed(() => pageTiles.value.find((tile) => domainOf(tile) === "weather" && displayOf(tile) === "forecast"));
 const forecasts = ref<Record<string, { d?: string; c?: string; h?: number; l?: number; p?: number }[]>>({});
 const domainOf = (tile: Tile) => tile.entity.split(".", 1)[0];
 const stateOf = (tile: Tile) => liveOf(tile.entity);
@@ -41,6 +42,7 @@ const forecastOf = (tile: Tile) => forecasts.value[tile.entity] || [];
 const weatherIcon = (condition?: string) => ({ sunny: "☀", "clear-night": "☾", cloudy: "☁", partlycloudy: "◐", rainy: "☂", pouring: "☂", snowy: "❄", fog: "≋", windy: "≋" } as Record<string, string>)[condition || ""] || "·";
 const weatherTemp = (tile: Tile) => stateOf(tile)?.a?.temperature;
 const weatherCondition = (tile: Tile) => stateOf(tile)?.state || "";
+const weatherGlyph = (condition?: string) => glyph(state.inventory.icons?.weather?.[condition || ""] || state.inventory.icons?.weather?.partlycloudy || "");
 async function loadForecasts() {
   const weather = configuredTiles.value.filter((tile) => domainOf(tile) === "weather");
   await Promise.all(weather.map(async (tile) => {
@@ -114,6 +116,10 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
           <span v-if="!forecastOf(tile).length" class="weather-empty">No forecast</span>
         </span>
       </div>
+    </div>
+    <div v-if="forecastTile" class="firmware-weather-icons" aria-hidden="true">
+      <span class="mdi firmware-weather-current-icon">{{ weatherGlyph(weatherCondition(forecastTile)) }}</span>
+      <span v-for="(day, index) in forecastOf(forecastTile).slice(0, 5)" :key="`preview-weather-icon-${index}`" class="mdi firmware-weather-day-icon" :style="{ left: `${48 + index * 11.5}%` }">{{ weatherGlyph(day.c) }}</span>
     </div>
     <div v-if="pageCount > 1" class="firmware-dots" aria-label="Preview pages">
       <button v-for="index in pageCount" :key="index" type="button" :class="{ active: index - 1 === page }" :aria-label="`Page ${index}`" @click.stop="page = index - 1"></button>
