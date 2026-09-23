@@ -32,6 +32,9 @@ function valueOf(tile: Tile) {
 }
 const modeOf = (tile: Tile) => stateOf(tile)?.state || "";
 const forecastOf = (tile: Tile) => forecasts.value[tile.entity] || [];
+const weatherIcon = (condition?: string) => ({ sunny: "☀", "clear-night": "☾", cloudy: "☁", partlycloudy: "◐", rainy: "☂", pouring: "☂", snowy: "❄", fog: "≋", windy: "≋" } as Record<string, string>)[condition || ""] || "·";
+const weatherTemp = (tile: Tile) => stateOf(tile)?.a?.temperature;
+const weatherCondition = (tile: Tile) => stateOf(tile)?.state || "";
 async function loadForecasts() {
   const weather = (props.tiles || []).filter((tile) => domainOf(tile) === "weather" && displayOf(tile) === "forecast");
   await Promise.all(weather.map(async (tile) => {
@@ -73,9 +76,10 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
         <span v-if="domainOf(tile) !== 'weather' || displayOf(tile) !== 'forecast'" class="firmware-tile-value">{{ valueOf(tile) }}</span>
         <span v-if="domainOf(tile) === 'climate'" class="firmware-tile-mode">{{ modeOf(tile) }}</span>
         <span v-if="domainOf(tile) === 'weather' && displayOf(tile) === 'forecast'" class="weather-forecast">
-          <span v-for="(day, index) in forecastOf(tile).slice(0, 5)" :key="`${tile.entity}-${index}`" class="weather-day">
-            <b>{{ day.d || "—" }}</b><span>{{ day.c || "—" }}</span><strong>{{ day.h ?? "—" }}° / {{ day.l ?? "—" }}°</strong><small v-if="day.p !== undefined">{{ day.p }}% rain</small>
-          </span>
+          <span class="weather-current"><b>{{ weatherIcon(weatherCondition(tile)) }}</b><strong>{{ weatherTemp(tile) ?? "—" }}°</strong><span>{{ weatherCondition(tile) }}</span></span>
+          <span class="weather-days"><span v-for="(day, index) in forecastOf(tile).slice(0, 5)" :key="`${tile.entity}-${index}`" class="weather-day">
+            <b>{{ day.d || "—" }}</b><span class="weather-icon">{{ weatherIcon(day.c) }}</span><strong>{{ day.h ?? "—" }}° / {{ day.l ?? "—" }}°</strong><small v-if="day.p !== undefined">{{ day.p }}%</small>
+          </span></span>
           <span v-if="!forecastOf(tile).length" class="weather-empty">No forecast</span>
         </span>
       </div>
