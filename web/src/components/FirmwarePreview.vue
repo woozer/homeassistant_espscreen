@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import createModule from "../wasm/firmware_preview.js";
+import type { Tile } from "../types";
 
-const props = defineProps<{ width: number; height: number; dpi?: number; columns: number; rows: number; target?: number; room?: number; mode?: string }>();
+const props = defineProps<{ width: number; height: number; dpi?: number; columns: number; rows: number; target?: number; room?: number; mode?: string; tiles?: Tile[] }>();
 const canvas = ref<HTMLCanvasElement | null>(null);
 let module: any = null;
 let raf = 0;
@@ -32,5 +33,12 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
 <template>
   <div class="firmware-preview" :style="{ aspectRatio: `${width} / ${height}` }">
     <canvas ref="canvas" :width="width" :height="height" aria-label="LVGL firmware preview"></canvas>
+    <div class="firmware-overlay" :style="{ gridTemplateColumns: `repeat(${columns}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }" aria-label="Configured tiles">
+      <div v-for="tile in (tiles || []).filter((item) => item.slot < columns * rows)" :key="`${tile.entity}-${tile.slot}`"
+        class="firmware-tile" :style="{ gridColumn: `${(tile.slot % columns) + 1} / span ${tile.options?.size === 'wide' ? Math.min(2, columns - (tile.slot % columns)) : tile.options?.size === 'full' ? columns : 1}`, gridRow: `${Math.floor(tile.slot / columns) + 1}` }">
+        <span class="firmware-tile-name">{{ tile.name || tile.entity }}</span>
+        <span class="firmware-tile-entity">{{ tile.entity }}</span>
+      </div>
+    </div>
   </div>
 </template>
