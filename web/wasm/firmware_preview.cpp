@@ -97,7 +97,7 @@ void render() {
     lv_obj_set_style_border_width(tile, 1, 0);
     lv_obj_set_style_border_color(tile, lv_color_hex(0xDDDDDD), 0);
   }
-  if (has_weather && weather_count > 0) weather_render();
+  if (has_weather) weather_render();
   if (!has_weather) {
     climate_card::Metrics metrics;
     ui::configure(dpi, "standard");
