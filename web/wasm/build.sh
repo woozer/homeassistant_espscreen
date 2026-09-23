@@ -23,13 +23,14 @@ if [ -n "${ESPHOME_GENERATED_MAIN:-}" ]; then
   python3 "$ROOT/web/wasm/generate_esphome_weather_font.py" \
     "$ESPHOME_GENERATED_MAIN" "$ROOT/web/wasm/generated/esphome_weather_26.c"
 fi
-em++ -O2 -std=c++17 -DLV_CONF_INCLUDE_SIMPLE -I"$ROOT/web/wasm" -I"$LVGL" -I"$LVGL/src" -c \
-  "$ROOT/web/wasm/firmware_preview.cpp" -o "$ROOT/../.cache/firmware_preview.o"
-OBJECTS="$ROOT/../.cache/firmware_preview.o"
+COMMON_FLAGS="-DLV_CONF_INCLUDE_SIMPLE -DLV_FONT_FMT_TXT_LARGE=1 -I$ROOT/web/wasm -I$LVGL -I$LVGL/src"
+em++ -O2 -std=c++17 $COMMON_FLAGS -c \
+  "$ROOT/web/wasm/firmware_preview.cpp" -o "$ROOT/../.cache/firmware_preview-large.o"
+OBJECTS="$ROOT/../.cache/firmware_preview-large.o"
 for source in $(find "$LVGL/src" -name '*.c' -print); do
-  object="$ROOT/../.cache/wasm-$(basename "$source").o"
+  object="$ROOT/../.cache/wasm-large-$(basename "$source").o"
   if [ ! -f "$object" ]; then
-    emcc -O2 -DLV_CONF_INCLUDE_SIMPLE -I"$ROOT/web/wasm" -I"$LVGL" -I"$LVGL/src" -c "$source" -o "$object"
+    emcc -O2 $COMMON_FLAGS -c "$source" -o "$object"
   fi
   OBJECTS="$OBJECTS $object"
 done
