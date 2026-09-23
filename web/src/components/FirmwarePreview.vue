@@ -13,7 +13,8 @@ let raf = 0;
 const page = ref(0);
 const pointerStart = ref<number | null>(null);
 const pageCount = computed(() => Math.max(1, props.pages || 1));
-const pageTiles = computed(() => (props.tiles || []).filter((tile) => Math.floor(tile.slot / (props.columns * props.rows)) === page.value));
+const configuredTiles = computed(() => (props.tiles && props.tiles.length ? props.tiles : state.layout?.tiles || []));
+const pageTiles = computed(() => configuredTiles.value.filter((tile) => Math.floor(tile.slot / (props.columns * props.rows)) === page.value));
 const visualTiles = computed(() => pageTiles.value.filter((tile) => !(domainOf(tile) === "weather" && displayOf(tile) === "forecast")));
 const forecasts = ref<Record<string, { d?: string; c?: string; h?: number; l?: number; p?: number }[]>>({});
 const domainOf = (tile: Tile) => tile.entity.split(".", 1)[0];
@@ -41,7 +42,7 @@ const weatherIcon = (condition?: string) => ({ sunny: "☀", "clear-night": "☾
 const weatherTemp = (tile: Tile) => stateOf(tile)?.a?.temperature;
 const weatherCondition = (tile: Tile) => stateOf(tile)?.state || "";
 async function loadForecasts() {
-  const weather = (props.tiles || []).filter((tile) => domainOf(tile) === "weather");
+  const weather = configuredTiles.value.filter((tile) => domainOf(tile) === "weather");
   await Promise.all(weather.map(async (tile) => {
     try { forecasts.value[tile.entity] = (await getJson<{ days?: any[] }>(`forecast?entity=${encodeURIComponent(tile.entity)}`)).days || []; }
     catch { forecasts.value[tile.entity] = []; }
@@ -60,10 +61,10 @@ function paint() {
   if (!module || !canvas.value) return;
   module._preview_set_profile(props.columns, props.rows);
   module._preview_clear_climate();
-  const climate = (props.tiles || []).find((tile) => domainOf(tile) === "climate");
+  const climate = configuredTiles.value.find((tile) => domainOf(tile) === "climate");
   if (climate) module._preview_set_climate(props.target ?? 21, props.room ?? 20, props.mode || "heat");
   module._preview_clear_weather();
-  const weather = (props.tiles || []).find((tile) => domainOf(tile) === "weather");
+  const weather = configuredTiles.value.find((tile) => domainOf(tile) === "weather");
   if (weather) {
     const live = stateOf(weather);
     module.ccall("preview_set_weather_current", "void", ["number", "string"], [Number(live?.a?.temperature ?? 0), weatherCondition(weather)]);
@@ -83,7 +84,11 @@ async function start() {
 watch(() => [props.width, props.height, props.dpi, props.columns, props.rows, props.target, props.room, props.mode], () => {
   cancelAnimationFrame(raf); raf = requestAnimationFrame(paint);
 });
-watch(() => props.tiles, loadForecasts, { immediate: true, deep: true });
+watch(() => props.tiles, async () => {
+  await loadForecasts();
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(paint);
+}, { immediate: true, deep: true });
 watch(forecasts, () => {
   cancelAnimationFrame(raf); raf = requestAnimationFrame(paint);
 }, { deep: true });

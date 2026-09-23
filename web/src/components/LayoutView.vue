@@ -47,7 +47,7 @@ function onCanvasClick(e: MouseEvent) {
     <FirmwarePreview v-if="firmwarePreview && currentScreen?.shape" :width="currentScreen.shape.width" :height="currentScreen.shape.height"
       :dpi="currentScreen.shape.dpi" :columns="currentScreen.shape.columns" :rows="currentScreen.shape.rows"
       :pages="pages" :target="previewClimate.target" :room="previewClimate.room" :mode="previewClimate.mode"
-      :tiles="layout.tiles" />
+      :tiles="entries.map((entry) => entry.tile)" />
     <div class="pages" id="layout-preview" :aria-label="t('editor.layout.aria')">
       <DevicePage v-for="page in shown" :key="page" :page="page - 1" :entries="entries" :pages="pages" :moving="state.drag.moving" />
       <div class="page ghost" :style="deviceStyle" :class="{ disabled: !canAdd }">
