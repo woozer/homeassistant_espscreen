@@ -181,6 +181,7 @@ a:hover { text-decoration: underline; }
 .weather-day { min-width: 0; display: flex; flex: 1; flex-direction: column; align-items: center; gap: .15em; font-size: clamp(8px, 1.1vw, 13px); }
 .weather-day span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #687079; }
 .weather-day .weather-icon { color: #e9a51a; font-size: clamp(16px, 2.8vw, 27px); line-height: 1; }
+.weather-editor-icon { color: #e9a51a; font-size: clamp(16px, 2.8vw, 27px); line-height: 1; }
 .weather-day strong { font-size: clamp(9px, 1.25vw, 15px); white-space: nowrap; }
 .weather-day small { color: #4d8fc2; white-space: nowrap; }
 .weather-empty { color: #687079; font-size: clamp(9px, 1.2vw, 14px); }
