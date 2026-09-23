@@ -119,7 +119,7 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
     </div>
     <div v-if="forecastTile" class="firmware-weather-icons" aria-hidden="true">
       <span class="mdi firmware-weather-current-icon">{{ weatherGlyph(weatherCondition(forecastTile)) }}</span>
-      <span v-for="(day, index) in forecastOf(forecastTile).slice(0, 5)" :key="`preview-weather-icon-${index}`" class="mdi firmware-weather-day-icon" :style="{ left: `${48 + index * 11.5}%` }">{{ weatherGlyph(day.c) }}</span>
+      <span v-for="(day, index) in forecastOf(forecastTile).slice(0, 5)" :key="`preview-weather-icon-${index}`" class="mdi firmware-weather-day-icon" :style="{ left: `${35.5 + index * 10}%` }">{{ weatherGlyph(day.c) }}</span>
     </div>
     <div v-if="pageCount > 1" class="firmware-dots" aria-label="Preview pages">
       <button v-for="index in pageCount" :key="index" type="button" :class="{ active: index - 1 === page }" :aria-label="`Page ${index}`" @click.stop="page = index - 1"></button>
