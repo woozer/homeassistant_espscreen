@@ -132,7 +132,7 @@ void preview_set_weather_day(int index, const char *day, const char *condition, 
 void preview_set_profile(int cols, int lines) {
   columns = std::clamp(cols, 1, 12); rows = std::clamp(lines, 1, 12); render();
 }
-void preview_render() { if (display) { render(); lv_timer_handler(); } }
+void preview_render() { if (display) { render(); lv_refr_now(display); lv_timer_handler(); } }
 const uint32_t *preview_frame() { return frame; }
 int preview_width() { return width; }
 int preview_height() { return height; }
