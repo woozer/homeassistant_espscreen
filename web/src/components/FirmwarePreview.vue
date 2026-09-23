@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import createModule from "../wasm/firmware_preview.js";
 import { clock24, entityName, liveOf, screenBuiltinName, state } from "../store";
 import { clockText } from "../model/topbar";
 import { getJson } from "../api";
 import type { Tile } from "../types";
 
-const props = defineProps<{ width: number; height: number; dpi?: number; columns: number; rows: number; target?: number; room?: number; mode?: string; tiles?: Tile[] }>();
+const props = defineProps<{ width: number; height: number; dpi?: number; columns: number; rows: number; pages?: number; target?: number; room?: number; mode?: string; tiles?: Tile[] }>();
 const canvas = ref<HTMLCanvasElement | null>(null);
 let module: any = null;
 let raf = 0;
+const page = ref(0);
+const pointerStart = ref<number | null>(null);
+const pageCount = computed(() => Math.max(1, props.pages || 1));
+const pageTiles = computed(() => (props.tiles || []).filter((tile) => Math.floor(tile.slot / (props.columns * props.rows)) === page.value));
 const forecasts = ref<Record<string, { d?: string; c?: string; h?: number; l?: number; p?: number }[]>>({});
 const domainOf = (tile: Tile) => tile.entity.split(".", 1)[0];
 const stateOf = (tile: Tile) => liveOf(tile.entity);
@@ -42,6 +46,14 @@ async function loadForecasts() {
     catch { forecasts.value[tile.entity] = []; }
   }));
 }
+function swipeStart(event: PointerEvent) { pointerStart.value = event.clientX; }
+function swipeEnd(event: PointerEvent) {
+  if (pointerStart.value === null) return;
+  const delta = event.clientX - pointerStart.value; pointerStart.value = null;
+  if (Math.abs(delta) < 35) return;
+  page.value = Math.max(0, Math.min(pageCount.value - 1, page.value + (delta < 0 ? 1 : -1)));
+}
+watch(pageCount, (count) => { if (page.value >= count) page.value = count - 1; });
 
 function paint() {
   if (!module || !canvas.value) return;
@@ -67,11 +79,11 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
 </script>
 
 <template>
-  <div class="firmware-preview" :style="{ aspectRatio: `${width} / ${height}` }">
+  <div class="firmware-preview" :style="{ aspectRatio: `${width} / ${height}` }" @pointerdown="swipeStart" @pointerup="swipeEnd">
     <canvas ref="canvas" :width="width" :height="height" aria-label="LVGL firmware preview"></canvas>
     <div class="firmware-overlay" :style="{ gridTemplateColumns: `repeat(${columns}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }" aria-label="Configured tiles">
-      <div v-for="tile in (tiles || []).filter((item) => item.slot < columns * rows)" :key="`${tile.entity}-${tile.slot}`"
-        class="firmware-tile" :style="{ gridColumn: `${(tile.slot % columns) + 1} / span ${tile.options?.size === 'wide' ? Math.min(2, columns - (tile.slot % columns)) : tile.options?.size === 'full' ? columns : 1}`, gridRow: `${Math.floor(tile.slot / columns) + 1}` }">
+      <div v-for="tile in pageTiles" :key="`${tile.entity}-${tile.slot}`"
+        class="firmware-tile" :style="{ gridColumn: `${(tile.slot % columns) + 1} / span ${tile.options?.size === 'wide' ? Math.min(2, columns - (tile.slot % columns)) : tile.options?.size === 'full' ? columns : 1}`, gridRow: `${Math.floor((tile.slot % (columns * rows)) / columns) + 1}` }">
         <span class="firmware-tile-name">{{ labelOf(tile) }}</span>
         <span v-if="domainOf(tile) !== 'weather' || displayOf(tile) !== 'forecast'" class="firmware-tile-value">{{ valueOf(tile) }}</span>
         <span v-if="domainOf(tile) === 'climate'" class="firmware-tile-mode">{{ modeOf(tile) }}</span>
@@ -83,6 +95,9 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
           <span v-if="!forecastOf(tile).length" class="weather-empty">No forecast</span>
         </span>
       </div>
+    </div>
+    <div v-if="pageCount > 1" class="firmware-dots" aria-label="Preview pages">
+      <button v-for="index in pageCount" :key="index" type="button" :class="{ active: index - 1 === page }" :aria-label="`Page ${index}`" @click.stop="page = index - 1"></button>
     </div>
   </div>
 </template>

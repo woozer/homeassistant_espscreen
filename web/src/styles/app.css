@@ -160,9 +160,12 @@ a:hover { text-decoration: underline; }
 .canvas-head b { color: var(--ink); font-weight: 600; font-size: 13px; }
 .canvas-head .warn { color: var(--warn); }
 .pages { display: flex; gap: 18px; align-items: flex-start; }
-.firmware-preview { position: relative; width: min(100%, 720px); max-height: 70vh; margin: 10px 0 18px; background: #e7e7e7; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.firmware-preview { position: relative; width: min(100%, 720px); max-height: 70vh; margin: 10px 0 18px; background: #e7e7e7; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; touch-action: pan-y; user-select: none; }
 .firmware-preview canvas { display: block; width: 100%; height: 100%; image-rendering: auto; }
 .firmware-overlay { position: absolute; inset: 12% 2% 2%; display: grid; gap: 1.2%; pointer-events: none; }
+.firmware-dots { position: absolute; left: 0; right: 0; bottom: 1.2%; display: flex; justify-content: center; gap: 7px; }
+.firmware-dots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: #a9afb7; }
+.firmware-dots button.active { background: #3d454e; transform: scale(1.25); }
 .firmware-tile { min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3%; border-radius: 10px; color: #1b1b1b; text-align: center; background: rgba(255,255,255,.72); border: 1px solid rgba(190,194,200,.9); box-shadow: 0 1px 2px rgba(0,0,0,.08); overflow: hidden; }
 .firmware-tile-name { max-width: 100%; font-size: clamp(10px, 1.8vw, 18px); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .firmware-tile-value { max-width: 100%; margin-top: .3em; font-size: clamp(14px, 3vw, 32px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
