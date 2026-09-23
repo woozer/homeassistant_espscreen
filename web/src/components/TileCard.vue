@@ -14,7 +14,8 @@ const props = defineProps<{ tile: Tile; slot: number; placeholder?: boolean }>()
 // A built-in card is named as the screens name it, in their language (app 0.2.90).
 const name = computed(() => props.tile.name || (domain.value === "screen" && screenBuiltinName(props.tile.entity)) || entityName(props.tile.entity));
 const full = computed(() => isFull(props.tile));
-const wide = computed(() => isWide(props.tile) && !full.value);
+// Forecast is intrinsically a two-cell firmware card, even before the editor persists its implied size.
+const wide = computed(() => (isWide(props.tile) || (display.value === "forecast" && domain.value === "weather")) && !full.value);
 const goesTo = computed(() => pageTarget(props.tile.entity));
 const background = computed(() => state.inventory.backgrounds?.[props.tile.options?.background || ""]?.color);
 const bare = computed(() => props.tile.options?.background === "none");

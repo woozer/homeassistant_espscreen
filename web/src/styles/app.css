@@ -167,6 +167,7 @@ a:hover { text-decoration: underline; }
 .firmware-dots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: #a9afb7; }
 .firmware-dots button.active { background: #3d454e; transform: scale(1.25); }
 .firmware-tile { min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3%; border-radius: 10px; color: #1b1b1b; text-align: center; background: rgba(255,255,255,.72); border: 1px solid rgba(190,194,200,.9); box-shadow: 0 1px 2px rgba(0,0,0,.08); overflow: hidden; }
+.firmware-weather-tile { align-items: stretch; padding: 2.5% 3%; }
 .firmware-tile-name { max-width: 100%; font-size: clamp(10px, 1.8vw, 18px); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .firmware-tile-value { max-width: 100%; margin-top: .3em; font-size: clamp(14px, 3vw, 32px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .firmware-tile-value:has(+ .firmware-tile-mode) { color: #1b1b1b; }
