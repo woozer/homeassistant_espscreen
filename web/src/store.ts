@@ -76,7 +76,12 @@ const VIRTUAL_SCREENS_KEY = "esp-screens.virtual-screens";
 function virtualScreens(): Screen[] {
   try {
     const value = JSON.parse(localStorage.getItem(VIRTUAL_SCREENS_KEY) || "[]");
-    return Array.isArray(value) ? value.filter((s) => s && s.virtual && s.id && s.shape) : [];
+    if (!Array.isArray(value)) return [];
+    return value.filter((s) => s && s.virtual && s.id && s.shape).map((s) => {
+      // The square sample originally shipped as a 3x3 mock; keep existing samples aligned with firmware's 2x3 grid.
+      if (s.board === "virtual720") s.shape = { ...s.shape, columns: 2, rows: 3 };
+      return s;
+    });
   } catch { return []; }
 }
 function persistVirtualScreens() {
@@ -91,7 +96,8 @@ const VIRTUAL_SHAPES: Record<string, Record<string, NonNullable<Screen["shape"]>
   waveshare7: { landscape: { width: 800, height: 480, columns: 3, rows: 2, dpi: 170, look: "standard" } },
   guition: { landscape: { width: 480, height: 480, columns: 2, rows: 3, dpi: 254, look: "standard" } },
   cyd: { landscape: { width: 320, height: 240, columns: 2, rows: 3, dpi: 143, look: "compact" } },
-  virtual720: { landscape: { width: 720, height: 720, columns: 3, rows: 3, dpi: 254, look: "standard" } },
+  // The 720px sample uses the firmware's standard two-column, three-row page. Its square glass does not imply a 3x3 grid.
+  virtual720: { landscape: { width: 720, height: 720, columns: 2, rows: 3, dpi: 254, look: "standard" } },
 };
 export function createVirtualScreen(name: string, board: string, orientation: Orientation = "landscape") {
   const shape = VIRTUAL_SHAPES[board]?.[orientation] || VIRTUAL_SHAPES.waveshare4b.landscape;
