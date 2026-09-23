@@ -1,12 +1,26 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import createModule from "../wasm/firmware_preview.js";
+import { liveOf } from "../store";
 import type { Tile } from "../types";
 
 const props = defineProps<{ width: number; height: number; dpi?: number; columns: number; rows: number; target?: number; room?: number; mode?: string; tiles?: Tile[] }>();
 const canvas = ref<HTMLCanvasElement | null>(null);
 let module: any = null;
 let raf = 0;
+const domainOf = (tile: Tile) => tile.entity.split(".", 1)[0];
+const stateOf = (tile: Tile) => liveOf(tile.entity);
+function valueOf(tile: Tile) {
+  const live = stateOf(tile), domain = domainOf(tile);
+  if (!live) return "—";
+  const a = live.a || {};
+  if (domain === "climate") return `${a.temperature ?? "—"}°  ·  now ${a.current_temperature ?? "—"}°`;
+  if (domain === "weather") return `${live.state}${a.temperature !== undefined ? `  ·  ${a.temperature}°` : ""}`;
+  if (domain === "media_player") return a.media_title || live.state;
+  if (["sensor", "number", "input_number", "counter"].includes(domain)) return `${live.state}${a.unit_of_measurement || ""}`;
+  return live.state;
+}
+const modeOf = (tile: Tile) => stateOf(tile)?.state || "";
 
 function paint() {
   if (!module || !canvas.value) return;
@@ -37,6 +51,8 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
       <div v-for="tile in (tiles || []).filter((item) => item.slot < columns * rows)" :key="`${tile.entity}-${tile.slot}`"
         class="firmware-tile" :style="{ gridColumn: `${(tile.slot % columns) + 1} / span ${tile.options?.size === 'wide' ? Math.min(2, columns - (tile.slot % columns)) : tile.options?.size === 'full' ? columns : 1}`, gridRow: `${Math.floor(tile.slot / columns) + 1}` }">
         <span class="firmware-tile-name">{{ tile.name || tile.entity }}</span>
+        <span class="firmware-tile-value">{{ valueOf(tile) }}</span>
+        <span v-if="domainOf(tile) === 'climate'" class="firmware-tile-mode">{{ modeOf(tile) }}</span>
         <span class="firmware-tile-entity">{{ tile.entity }}</span>
       </div>
     </div>
