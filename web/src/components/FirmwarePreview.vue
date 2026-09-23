@@ -85,7 +85,7 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
       <div v-for="tile in pageTiles" :key="`${tile.entity}-${tile.slot}`"
         class="firmware-tile" :class="{ 'firmware-weather-tile': domainOf(tile) === 'weather' && displayOf(tile) === 'forecast' }"
         :style="{ gridColumn: `${(tile.slot % columns) + 1} / span ${tile.options?.size === 'wide' || (domainOf(tile) === 'weather' && displayOf(tile) === 'forecast') ? Math.min(2, columns - (tile.slot % columns)) : tile.options?.size === 'full' ? columns : 1}`, gridRow: `${Math.floor((tile.slot % (columns * rows)) / columns) + 1}` }">
-        <span class="firmware-tile-name">{{ labelOf(tile) }}</span>
+        <span v-if="!(domainOf(tile) === 'weather' && displayOf(tile) === 'forecast')" class="firmware-tile-name">{{ labelOf(tile) }}</span>
         <span v-if="domainOf(tile) !== 'weather' || displayOf(tile) !== 'forecast'" class="firmware-tile-value">{{ valueOf(tile) }}</span>
         <span v-if="domainOf(tile) === 'climate'" class="firmware-tile-mode">{{ modeOf(tile) }}</span>
         <span v-if="domainOf(tile) === 'weather' && displayOf(tile) === 'forecast'" class="weather-forecast">

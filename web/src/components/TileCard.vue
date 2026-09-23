@@ -159,7 +159,6 @@ async function onKey(e: KeyboardEvent) {
     </template>
     <template v-else-if="display === 'forecast' && domain === 'weather'">
       <div class="weather-editor-forecast" aria-hidden="true">
-        <span class="weather-editor-title">{{ name }}</span>
         <span class="weather-editor-days">
           <span v-for="(day, index) in forecast.slice(0, 5)" :key="`${tile.entity}-${index}`" class="weather-editor-day">
             <b>{{ day.d || "—" }}</b><span>{{ day.c || "—" }}</span><strong>{{ day.h ?? "—" }}° / {{ day.l ?? "—" }}°</strong><small v-if="day.p !== undefined">{{ day.p }}% rain</small>
