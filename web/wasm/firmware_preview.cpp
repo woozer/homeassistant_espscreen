@@ -86,18 +86,6 @@ void render() {
   lv_obj_clean(root);
   lv_obj_set_style_bg_color(root, lv_color_hex(0xE7E7E7), 0);
   lv_obj_set_style_bg_opa(root, LV_OPA_COVER, 0);
-  const int grid_top = 58, gap = std::max(4, width / 90);
-  const int cell_w = (width - gap * (columns + 1)) / std::max(1, columns);
-  const int cell_h = (height - grid_top - gap * (rows + 1)) / std::max(1, rows);
-  for (int row = 0; row < rows; ++row) for (int col = 0; col < columns; ++col) {
-    auto *tile = lv_obj_create(root);
-    lv_obj_set_pos(tile, gap + col * (cell_w + gap), grid_top + gap + row * (cell_h + gap));
-    lv_obj_set_size(tile, cell_w, cell_h);
-    lv_obj_set_style_radius(tile, std::max(8, width / 45), 0);
-    lv_obj_set_style_bg_color(tile, lv_color_hex(0xFFFFFF), 0);
-    lv_obj_set_style_border_width(tile, 1, 0);
-    lv_obj_set_style_border_color(tile, lv_color_hex(0xDDDDDD), 0);
-  }
   if (has_weather) weather_render();
   if (has_climate && !has_weather) {
     climate_card::Metrics metrics;

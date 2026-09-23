@@ -59,9 +59,11 @@ watch(pageCount, (count) => { if (page.value >= count) page.value = count - 1; }
 function paint() {
   if (!module || !canvas.value) return;
   module._preview_set_profile(props.columns, props.rows);
-  module._preview_set_climate(props.target ?? 21, props.room ?? 20, props.mode || "heat");
+  module._preview_clear_climate();
+  const climate = (props.tiles || []).find((tile) => domainOf(tile) === "climate");
+  if (climate) module._preview_set_climate(props.target ?? 21, props.room ?? 20, props.mode || "heat");
   module._preview_clear_weather();
-  const weather = pageTiles.value.find((tile) => domainOf(tile) === "weather" && displayOf(tile) === "forecast");
+  const weather = (props.tiles || []).find((tile) => domainOf(tile) === "weather" && displayOf(tile) === "forecast");
   if (weather) {
     const live = stateOf(weather);
     module.ccall("preview_set_weather_current", "void", ["number", "string"], [Number(live?.a?.temperature ?? 0), weatherCondition(weather)]);
