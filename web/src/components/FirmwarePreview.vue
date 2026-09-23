@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import createModule from "../wasm/firmware_preview.js";
-import { liveOf } from "../store";
+import { clock24, entityName, liveOf, screenBuiltinName, state } from "../store";
+import { clockText } from "../model/topbar";
 import type { Tile } from "../types";
 
 const props = defineProps<{ width: number; height: number; dpi?: number; columns: number; rows: number; target?: number; room?: number; mode?: string; tiles?: Tile[] }>();
@@ -10,8 +11,15 @@ let module: any = null;
 let raf = 0;
 const domainOf = (tile: Tile) => tile.entity.split(".", 1)[0];
 const stateOf = (tile: Tile) => liveOf(tile.entity);
+const labelOf = (tile: Tile) => tile.name || (domainOf(tile) === "screen" ? screenBuiltinName(tile.entity) : undefined) || entityName(tile.entity);
+const displayOf = (tile: Tile) => tile.options?.display || "standard";
 function valueOf(tile: Tile) {
   const live = stateOf(tile), domain = domainOf(tile);
+  if (domain === "screen") {
+    if (displayOf(tile) === "analog") return "◷";
+    if (displayOf(tile) === "digital") return clockText(clock24.value, new Date(state.now));
+    return labelOf(tile);
+  }
   if (!live) return "—";
   const a = live.a || {};
   if (domain === "climate") return `${a.temperature ?? "—"}°  ·  now ${a.current_temperature ?? "—"}°`;
@@ -50,7 +58,7 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
     <div class="firmware-overlay" :style="{ gridTemplateColumns: `repeat(${columns}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }" aria-label="Configured tiles">
       <div v-for="tile in (tiles || []).filter((item) => item.slot < columns * rows)" :key="`${tile.entity}-${tile.slot}`"
         class="firmware-tile" :style="{ gridColumn: `${(tile.slot % columns) + 1} / span ${tile.options?.size === 'wide' ? Math.min(2, columns - (tile.slot % columns)) : tile.options?.size === 'full' ? columns : 1}`, gridRow: `${Math.floor(tile.slot / columns) + 1}` }">
-        <span class="firmware-tile-name">{{ tile.name || tile.entity }}</span>
+        <span class="firmware-tile-name">{{ labelOf(tile) }}</span>
         <span class="firmware-tile-value">{{ valueOf(tile) }}</span>
         <span v-if="domainOf(tile) === 'climate'" class="firmware-tile-mode">{{ modeOf(tile) }}</span>
         <span class="firmware-tile-entity">{{ tile.entity }}</span>
