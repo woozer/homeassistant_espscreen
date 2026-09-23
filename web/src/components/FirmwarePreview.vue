@@ -41,7 +41,7 @@ const weatherIcon = (condition?: string) => ({ sunny: "☀", "clear-night": "☾
 const weatherTemp = (tile: Tile) => stateOf(tile)?.a?.temperature;
 const weatherCondition = (tile: Tile) => stateOf(tile)?.state || "";
 async function loadForecasts() {
-  const weather = (props.tiles || []).filter((tile) => domainOf(tile) === "weather" && displayOf(tile) === "forecast");
+  const weather = (props.tiles || []).filter((tile) => domainOf(tile) === "weather");
   await Promise.all(weather.map(async (tile) => {
     try { forecasts.value[tile.entity] = (await getJson<{ days?: any[] }>(`forecast?entity=${encodeURIComponent(tile.entity)}`)).days || []; }
     catch { forecasts.value[tile.entity] = []; }
@@ -63,7 +63,7 @@ function paint() {
   const climate = (props.tiles || []).find((tile) => domainOf(tile) === "climate");
   if (climate) module._preview_set_climate(props.target ?? 21, props.room ?? 20, props.mode || "heat");
   module._preview_clear_weather();
-  const weather = (props.tiles || []).find((tile) => domainOf(tile) === "weather" && displayOf(tile) === "forecast");
+  const weather = (props.tiles || []).find((tile) => domainOf(tile) === "weather");
   if (weather) {
     const live = stateOf(weather);
     module.ccall("preview_set_weather_current", "void", ["number", "string"], [Number(live?.a?.temperature ?? 0), weatherCondition(weather)]);
