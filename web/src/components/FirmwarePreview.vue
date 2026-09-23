@@ -61,7 +61,6 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
         <span class="firmware-tile-name">{{ labelOf(tile) }}</span>
         <span class="firmware-tile-value">{{ valueOf(tile) }}</span>
         <span v-if="domainOf(tile) === 'climate'" class="firmware-tile-mode">{{ modeOf(tile) }}</span>
-        <span class="firmware-tile-entity">{{ tile.entity }}</span>
       </div>
     </div>
   </div>
