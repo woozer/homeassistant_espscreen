@@ -41,6 +41,8 @@ export type BoardOrientation = { width: number; height: number; columns: number;
 export type BoardChoice = { square: boolean; orientations: Partial<Record<Orientation, BoardOrientation>> };
 export type Screen = {
   id: string; name: string; online: boolean; area?: string; firmware?: string; board?: string;
+  // A local design target created by the editor; it has no Home Assistant device or firmware connection.
+  virtual?: boolean;
   layout: Layout; update?: UpdateInfo; settings?: SettingsView; delivery?: string; status?: string;
   // The layout is out and the screen holds it (app 0.2.108): the editor then shows no delivery line.
   in_sync?: boolean;

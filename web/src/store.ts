@@ -10,7 +10,7 @@ import {
 } from "./model/layout";
 import { agoText, barMetricsFor, clockText, dateText, itemKey, type ItemView, whenBarFontsLoad } from "./model/topbar";
 import { versionAtLeast } from "./model/layout";
-import type { Capability, ChangelogSection, EntityAction, HeaderItem, Inventory, Layout, Screen, Tile } from "./types";
+import type { Capability, ChangelogSection, EntityAction, HeaderItem, Inventory, Layout, Orientation, Screen, Tile } from "./types";
 
 export type Inspector =
   | { kind: "tile" }
@@ -71,6 +71,41 @@ export const state = reactive({
   palette: false,
   firmwareJob: null as null | { job: any; logs: string[] },
 });
+
+const VIRTUAL_SCREENS_KEY = "esp-screens.virtual-screens";
+function virtualScreens(): Screen[] {
+  try {
+    const value = JSON.parse(localStorage.getItem(VIRTUAL_SCREENS_KEY) || "[]");
+    return Array.isArray(value) ? value.filter((s) => s && s.virtual && s.id && s.shape) : [];
+  } catch { return []; }
+}
+function persistVirtualScreens() {
+  localStorage.setItem(VIRTUAL_SCREENS_KEY, JSON.stringify(state.inventory.screens.filter((s) => s.virtual)));
+}
+const VIRTUAL_SHAPES: Record<string, Record<string, NonNullable<Screen["shape"]>>> = {
+  waveshare4b: {
+    landscape: { width: 800, height: 480, columns: 2, rows: 3, dpi: 170, look: "standard" },
+    portrait: { width: 480, height: 800, columns: 1, rows: 4, dpi: 170, look: "standard" },
+  },
+  waveshare43: { landscape: { width: 800, height: 480, columns: 3, rows: 2, dpi: 170, look: "standard" } },
+  waveshare7: { landscape: { width: 800, height: 480, columns: 3, rows: 2, dpi: 170, look: "standard" } },
+  guition: { landscape: { width: 480, height: 480, columns: 2, rows: 3, dpi: 254, look: "standard" } },
+  cyd: { landscape: { width: 320, height: 240, columns: 2, rows: 3, dpi: 143, look: "compact" } },
+};
+export function createVirtualScreen(name: string, board: string, orientation: Orientation = "landscape") {
+  const shape = VIRTUAL_SHAPES[board]?.[orientation] || VIRTUAL_SHAPES.waveshare4b.landscape;
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "preview";
+  const id = `virtual.${slug}-${Date.now().toString(36)}`;
+  const screen: Screen = {
+    id, name: name.trim(), online: false, virtual: true, board, orientation,
+    firmware: "0.2.127", firmware_known: "0.2.127", tile_limit: 64, full_page: true,
+    page_tiles_repeat: true, in_sync: true, shape, layout: { title: name.trim(), tiles: [], pages: 1 },
+  };
+  state.inventory.screens.push(screen);
+  persistVirtualScreens();
+  select(id);
+  return screen;
+}
 
 export const currentScreen = computed<Screen | undefined>(() => state.inventory.screens.find((s) => s.id === state.selected));
 // The firmware version a screen's features go by, as the add-on works it out (firmware_known, app 0.2.78; null when it
@@ -555,6 +590,15 @@ export function closeInspector() {
 // ---- Save ----
 export async function save() {
   if (state.busy || !state.layout || !state.selected) return;
+  if (currentScreen.value?.virtual) {
+    const screen = currentScreen.value;
+    screen.layout = JSON.parse(JSON.stringify(state.layout));
+    persistVirtualScreens();
+    state.dirty = false;
+    state.saved = Date.now();
+    toast(t("editor.screen_view.saved.current"));
+    return;
+  }
   state.busy = true;
   // The layout as it leaves: a drag, the drawer or Add still work while the request is on its way (the add-on's check
   // can take seconds after Copy or Import), and those changes aren't in it (app 0.2.78).
@@ -608,6 +652,14 @@ export async function calibrateTouch(screen: Screen) {
 // before it asks; here only what came back is shown.
 export async function removeScreen(screen: Screen) {
   if (state.removing) return false;
+  if (screen.virtual) {
+    if (!confirm(t("editor.sidebar.remove.title", { name: screen.name }))) return false;
+    if (state.selected === screen.id) forgetOpenScreen();
+    state.inventory.screens = state.inventory.screens.filter((s) => s.id !== screen.id);
+    persistVirtualScreens();
+    toast(t("editor.sidebar.remove.done", { name: screen.name }));
+    return true;
+  }
   state.removing = screen.id;
   try {
     const result = await send<{ name?: string; kept?: string[] }>(`screens/${encodeURIComponent(screen.id)}`, "DELETE");
@@ -1075,7 +1127,8 @@ export async function refresh(full = true) {
   try {
     const data = await getJson(full ? "inventory" : "inventory?light=1");
     // A light poll carries only screens and update status; keep the catalogues we have.
-    state.inventory = full ? data : { ...state.inventory, ...data };
+    const savedVirtual = virtualScreens();
+    state.inventory = full ? { ...data, screens: [...(data.screens || []), ...savedVirtual] } : { ...state.inventory, ...data };
     if (data.csrf) setCsrf(data.csrf);
     state.connected = Boolean(state.inventory.connected);
     state.reachable = true;

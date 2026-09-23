@@ -3,13 +3,14 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { getJson, send } from "../api";
 import { t } from "../i18n";
-import { copyText, go, openIntegrations, toast } from "../store";
+import { copyText, createVirtualScreen, go, openIntegrations, toast } from "../store";
 import type { BoardChoice, BoardOrientation, Orientation } from "../types";
 
 // Download: ESP Screens builds, the owner flashes the file from their own computer. ESPHome Web is ESPHome's own
 // browser flasher; this address opens it with its hint for a downloaded project (as ESPHome Device Builder does).
 const ESPHOME_WEB = "https://web.esphome.io/?dashboard_install";
 const form = reactive({ board: "cyd", orientation: "landscape" as Orientation, friendly_name: "", name: "", wifi_ssid: "", wifi_password: "", target: "" });
+const mode = ref<"physical" | "virtual">("physical");
 const installer = reactive({
   view: "setup" as "setup" | "progress" | "done", file: null as string | null, friendly: "", board: "cyd", target: "",
   apiKey: null as string | null, nodeEdited: false, jobState: null as string | null, picked: false, action: null as string | null,
@@ -153,8 +154,14 @@ const progressDetail = computed(() => installer.view === "done"
 const image = computed(() => ({ href: `api/firmware/profiles/${encodeURIComponent(installer.file || "")}/download`, name: (installer.file || "").replace(/\.yaml$/, "") + ".factory.bin" }));
 async function submit(event: Event) {
   const element = event.target as HTMLFormElement;
-  if (!installer.nodeEdited) form.name = slug(form.friendly_name);
   if (!element.reportValidity()) return;
+  if (mode.value === "virtual") {
+    createVirtualScreen(form.friendly_name, form.board, form.orientation);
+    toast(`Virtual device "${form.friendly_name.trim()}" created.`);
+    go("");
+    return;
+  }
+  if (!installer.nodeEdited) form.name = slug(form.friendly_name);
   submitting.value = true;
   status.value = "";
   try {
@@ -187,6 +194,7 @@ async function retry() {
   }
 }
 function reset() {
+  mode.value = "physical";
   Object.assign(installer, { view: "setup", file: null, apiKey: null, nodeEdited: false, jobState: null, target: "", picked: false, action: null });
   Object.assign(form, { board: "cyd", orientation: "landscape", friendly_name: "", name: "", wifi_ssid: "", wifi_password: "", target: "" });
   nodeVisible.value = false; job.value = null; logs.value = []; status.value = ""; note.value = ""; logOpen.value = false;
@@ -211,6 +219,12 @@ onBeforeUnmount(() => clearInterval(poll));
       <button type="button" class="btn quiet" id="close-install" :aria-label="t('editor.common.close')" @click="close">{{ t("editor.common.back") }}</button>
     </div>
     <form v-if="installer.view === 'setup'" id="install-form" class="card" @submit.prevent="submit">
+      <div class="seg install-mode" role="tablist" aria-label="New screen type">
+        <button type="button" role="tab" :aria-pressed="mode === 'physical'" @click="mode = 'physical'">Physical screen</button>
+        <button type="button" role="tab" :aria-pressed="mode === 'virtual'" @click="mode = 'virtual'">Virtual preview</button>
+      </div>
+      <p v-if="mode === 'virtual'" class="hint">Create a local preview that uses the Home Assistant entity library without pairing hardware.</p>
+      <template v-if="mode === 'physical'">
       <fieldset>
         <legend>{{ t("editor.installer.board") }}</legend>
         <div class="boards">
@@ -280,6 +294,23 @@ onBeforeUnmount(() => clearInterval(poll));
         <button type="submit" class="btn primary" id="install-go" :disabled="goDisabled">{{ goLabel }}</button>
         <span id="install-status" class="status-line error" role="status">{{ status }}</span>
       </div>
+      </template>
+      <template v-else>
+        <fieldset>
+          <legend>Preview device</legend>
+          <div class="boards">
+            <label class="board"><input type="radio" name="virtual-orientation" value="landscape" v-model="form.orientation" /><span><b>Waveshare 4B</b><small>800 × 480 · 2 × 3 · landscape</small></span></label>
+            <label class="board"><input type="radio" name="virtual-orientation" value="portrait" v-model="form.orientation" /><span><b>Waveshare 4B portrait</b><small>480 × 800 · 1 × 4</small></span></label>
+          </div>
+        </fieldset>
+        <div class="field">
+          <label class="f-label" for="virtual-name">Preview name</label>
+          <input id="virtual-name" v-model="form.friendly_name" required maxlength="60" placeholder="Waveshare 4B preview" autocomplete="off" />
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn primary" id="virtual-create">Create virtual device</button>
+        </div>
+      </template>
     </form>
     <div v-else id="install-progress" class="card">
       <div class="progress-head">

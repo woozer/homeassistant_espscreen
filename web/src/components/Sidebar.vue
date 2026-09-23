@@ -24,6 +24,7 @@ const languageOnly = (screen: Screen) => {
   return Boolean(u.language) && (!u.target || versionAtLeast(firmwareVersion(screen), u.target));
 };
 function updateState(screen: Screen) {
+  if (screen.virtual) return null;
   const u = screen.update || {};
   if (u.state === "running" || state.updating.includes(screen.id)) return { kind: "running", text: phaseText(u.phase) };
   if (u.state === "queued") return { kind: "queued", text: t("editor.sidebar.update.queued") };
@@ -38,12 +39,14 @@ function updateState(screen: Screen) {
 }
 // The light beside the icon: green when all is well, amber when an update waits or runs, red when the screen is away.
 const light = (screen: Screen) => {
+  if (screen.virtual) return "virtual";
   if (!screen.online) return "down";
   const kind = updateState(screen)?.kind;
   return kind === "available" || kind === "blocked" || kind === "running" || kind === "queued" ? "update" : kind === "failed" ? "down" : "ok";
 };
 // One quiet line under the name, only when there is something to say; a healthy screen shows its name alone.
 const subline = (screen: Screen) => {
+  if (screen.virtual) return { kind: "virtual", text: "Virtual preview" };
   if (!screen.online) return { kind: "down", text: t("editor.common.offline") };
   const u = updateState(screen);
   // An update nothing here can build is still an update: the line names it, the details say why it waits.
