@@ -16,6 +16,13 @@ fi
 export PATH=/opt/homebrew/bin:/opt/homebrew/opt/python@3.14/bin:$PATH
 export EMSDK_PYTHON=/opt/homebrew/opt/python@3.14/bin/python3.14
 export EM_CACHE="$ROOT/../.cache/emscripten"
+# When supplied, regenerate the weather font from ESPHome's generated C++ before
+# compiling. This keeps the browser preview tied to the same font output as the
+# firmware after an ESPHome/core/font update.
+if [ -n "${ESPHOME_GENERATED_MAIN:-}" ]; then
+  python3 "$ROOT/web/wasm/generate_esphome_weather_font.py" \
+    "$ESPHOME_GENERATED_MAIN" "$ROOT/web/wasm/generated/esphome_weather_26.c"
+fi
 em++ -O2 -std=c++17 -DLV_CONF_INCLUDE_SIMPLE -I"$ROOT/web/wasm" -I"$LVGL" -I"$LVGL/src" -c \
   "$ROOT/web/wasm/firmware_preview.cpp" -o "$ROOT/../.cache/firmware_preview.o"
 OBJECTS="$ROOT/../.cache/firmware_preview.o"

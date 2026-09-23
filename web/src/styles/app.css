@@ -162,9 +162,6 @@ a:hover { text-decoration: underline; }
 .pages { display: flex; gap: 18px; align-items: flex-start; }
 .firmware-preview { position: relative; width: min(100%, 720px); max-height: 70vh; margin: 10px 0 18px; background: #e7e7e7; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; touch-action: pan-y; user-select: none; }
 .firmware-preview canvas { display: block; width: 100%; height: 100%; image-rendering: auto; }
-.firmware-weather-icons { position: absolute; inset: 0; pointer-events: none; color: #1b1b1b; }
-.firmware-weather-current-icon { position: absolute; left: 14%; top: 45.5%; font-size: clamp(22px, 5vw, 42px); }
-.firmware-weather-day-icon { position: absolute; top: 45.5%; transform: translateX(-50%); font-size: clamp(18px, 3.5vw, 30px); }
 .firmware-overlay { position: absolute; inset: 12% 2% 2%; display: grid; gap: 1.2%; pointer-events: none; }
 .firmware-dots { position: absolute; left: 0; right: 0; bottom: 1.2%; display: flex; justify-content: center; gap: 7px; }
 .firmware-dots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: #a9afb7; }
