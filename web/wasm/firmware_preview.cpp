@@ -61,6 +61,19 @@ const char *weather_text(const std::string &condition) {
   if (condition == "snowy") return "Snowy"; if (condition == "fog") return "Fog";
   return condition.c_str();
 }
+const char *weather_draw_glyph(const std::string &condition) {
+  const char *mdi = weather_glyph(condition);
+  uint32_t cp = 0;
+  const unsigned char *p = reinterpret_cast<const unsigned char *>(mdi);
+  if (p[0] >= 0xF0) cp = ((p[0] & 7u) << 18) | ((p[1] & 63u) << 12) | ((p[2] & 63u) << 6) | (p[3] & 63u);
+  lv_font_glyph_dsc_t dsc{};
+  if (cp && lv_font_get_glyph_dsc(&mdi_weather_28, &dsc, cp, 0)) return mdi;
+  if (condition == "sunny") return "*";
+  if (condition == "snowy") return "x";
+  if (condition == "rainy" || condition == "pouring") return "/";
+  if (condition == "cloudy" || condition == "partlycloudy") return "O";
+  return "~";
+}
 void weather_render() {
   const int gap = std::max(4, width / 90), grid_top = 58;
   const int cell_w = (width - gap * (columns + 1)) / std::max(1, columns);
@@ -69,7 +82,8 @@ void weather_render() {
   card(root, x, y, w, h);
   const int pad = std::max(12, width / 45), current_w = std::max(110, w * 28 / 100);
   char value[24]; std::snprintf(value, sizeof(value), "%.0f°", weather_current);
-  label(root, weather_glyph(weather_condition), x + pad, y + h / 2 - 24, 48, 42, &mdi_weather_28, lv_color_hex(0x1B1B1B));
+  const char *current_glyph = weather_draw_glyph(weather_condition);
+  label(root, current_glyph, x + pad, y + h / 2 - 24, 48, 42, current_glyph == weather_glyph(weather_condition) ? &mdi_weather_28 : &lv_font_montserrat_28, lv_color_hex(0x1B1B1B));
   label(root, value, x + pad + 48, y + h / 2 - 24, current_w - 48, 42, &lv_font_montserrat_28, lv_color_hex(0x1B1B1B));
   label(root, weather_text(weather_condition), x + pad, y + h / 2 + 20, current_w - pad, 24, &lv_font_montserrat_14, lv_color_hex(0x5A5F66));
   const int count = std::min(5, weather_count), days_x = x + current_w, days_w = w - current_w - pad;
@@ -77,7 +91,8 @@ void weather_render() {
   for (int i = 0; i < count; ++i) {
     const auto &day = weather_days[i]; const int dx = days_x + i * column;
     label(root, day.day.c_str(), dx, y + 24, column, 24, &lv_font_montserrat_14, lv_color_hex(0x1B1B1B));
-    label(root, weather_glyph(day.condition), dx, y + 48, column, 30, &mdi_weather_28, lv_color_hex(0x1B1B1B));
+    const char *day_glyph = weather_draw_glyph(day.condition);
+    label(root, day_glyph, dx, y + 48, column, 30, day_glyph == weather_glyph(day.condition) ? &mdi_weather_28 : &lv_font_montserrat_28, lv_color_hex(0x1B1B1B));
     char temps[32]; std::snprintf(temps, sizeof(temps), "%.0f/%.0f", day.high, day.low);
     label(root, temps, dx, y + 78, column, 24, &lv_font_montserrat_14, lv_color_hex(0x5A5F66));
     if (std::isfinite(day.rain)) { char rain[16]; std::snprintf(rain, sizeof(rain), "%.0f%%", day.rain); label(root, rain, dx, y + 101, column, 18, &lv_font_montserrat_14, lv_color_hex(0x4D8FC2)); }
