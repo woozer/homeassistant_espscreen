@@ -73,7 +73,12 @@ function swipeEnd(event: PointerEvent) {
   page.value = Math.max(0, Math.min(pageCount.value - 1, page.value + (delta < 0 ? 1 : -1)));
 }
 watch(pageCount, (count) => { if (page.value >= count) page.value = count - 1; });
-watch(page, () => { detailOpen.value = false; if (module) module._preview_back(); });
+watch(page, () => {
+  detailOpen.value = false;
+  if (module) module._preview_back();
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(paint);
+});
 
 function paint() {
   if (!module || !canvas.value) return;
