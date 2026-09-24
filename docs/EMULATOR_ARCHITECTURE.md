@@ -40,5 +40,9 @@ render_frame()
 dispatch_service_call(call)
 ```
 
+The C boundary is declared in `components/smart_display/renderer_host_api.h` and carries an explicit ABI version.
+The ESP32 and WebAssembly adapters must compile against that header. Changing the ABI requires both targets to be
+updated and prevents an old preview adapter from being mistaken for a current firmware renderer.
+
 The profile carries resolution, DPI, grid dimensions and board capabilities. No 720 × 720 or 3 × 3 assumption belongs
 inside the renderer.
