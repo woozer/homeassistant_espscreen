@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import createModule from "../wasm/firmware_preview.js";
-import { clock24, entityName, liveOf, screenBuiltinName, state } from "../store";
-import { clockText } from "../model/topbar";
+import { clock24, entityName, liveOf, screenBuiltinName, state, tileIconCp } from "../store";
+import { clockText, glyph } from "../model/topbar";
+import { domainInfo } from "../model/layout";
 import { getJson } from "../api";
 import type { Tile } from "../types";
 
@@ -43,6 +44,11 @@ const forecastOf = (tile: Tile) => forecasts.value[tile.entity] || [];
 const weatherIcon = (condition?: string) => ({ sunny: "☀", "clear-night": "☾", cloudy: "☁", partlycloudy: "◐", rainy: "☂", pouring: "☂", snowy: "❄", fog: "≋", windy: "≋" } as Record<string, string>)[condition || ""] || "·";
 const weatherTemp = (tile: Tile) => stateOf(tile)?.a?.temperature;
 const weatherCondition = (tile: Tile) => stateOf(tile)?.state || "";
+const tileIcon = (tile: Tile) => glyph(tileIconCp(tile));
+const tileStyle = (tile: Tile) => {
+  const [, , color, background] = domainInfo(tile.entity);
+  return { color, backgroundColor: tile.options?.background === "none" ? "transparent" : background };
+};
 async function loadForecasts() {
   const weather = configuredTiles.value.filter((tile) => domainOf(tile) === "weather");
   await Promise.all(weather.map(async (tile) => {
@@ -126,7 +132,8 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
     <div v-if="!detailOpen" class="firmware-overlay" :style="{ gridTemplateColumns: `repeat(${columns}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }" aria-label="Configured tiles">
       <div v-for="tile in visualTiles" :key="`${tile.entity}-${tile.slot}`"
         class="firmware-tile" :class="{ 'firmware-weather-tile': domainOf(tile) === 'weather' && displayOf(tile) === 'forecast' }"
-        :style="{ gridColumn: `${(tile.slot % columns) + 1} / span ${tile.options?.size === 'wide' || (domainOf(tile) === 'weather' && displayOf(tile) === 'forecast') ? Math.min(2, columns - (tile.slot % columns)) : tile.options?.size === 'full' ? columns : 1}`, gridRow: `${Math.floor((tile.slot % (columns * rows)) / columns) + 1}` }">
+        :style="{ ...tileStyle(tile), gridColumn: `${(tile.slot % columns) + 1} / span ${tile.options?.size === 'wide' || (domainOf(tile) === 'weather' && displayOf(tile) === 'forecast') ? Math.min(2, columns - (tile.slot % columns)) : tile.options?.size === 'full' ? columns : 1}`, gridRow: `${Math.floor((tile.slot % (columns * rows)) / columns) + 1}` }">
+        <span class="firmware-tile-icon">{{ tileIcon(tile) }}</span>
         <span v-if="!(domainOf(tile) === 'weather' && displayOf(tile) === 'forecast')" class="firmware-tile-name">{{ labelOf(tile) }}</span>
         <span v-if="domainOf(tile) !== 'weather' || displayOf(tile) !== 'forecast'" class="firmware-tile-value">{{ valueOf(tile) }}</span>
         <span v-if="domainOf(tile) === 'climate'" class="firmware-tile-mode">{{ modeOf(tile) }}</span>
