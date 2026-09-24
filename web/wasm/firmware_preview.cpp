@@ -28,6 +28,7 @@ float weather_current = NAN;
 std::string weather_condition;
 bool has_weather = false;
 bool has_climate = false;
+bool weather_detail = false;
 
 void flush(lv_display_t *, const lv_area_t *area, uint8_t *px) {
   const int w = area->x2 - area->x1 + 1;
@@ -92,13 +93,48 @@ void weather_render() {
     if (std::isfinite(day.rain)) { char rain[16]; std::snprintf(rain, sizeof(rain), "%.0f%%", day.rain); label(root, rain, dx, y + 101, column, 18, &lv_font_montserrat_14, lv_color_hex(0x4D8FC2)); }
   }
 }
+void weather_detail_render() {
+  weather_card::Metrics metrics;
+  metrics.large = true;
+  metrics.text_h = lv_font_get_line_height(&lv_font_montserrat_14);
+  metrics.small_h = metrics.text_h;
+  metrics.mini_h = lv_font_get_line_height(&esphome_weather_26);
+  metrics.icon_h = metrics.mini_h;
+  metrics.big_h = lv_font_get_line_height(&lv_font_montserrat_28);
+  metrics.hour_w = 0;
+  metrics.top = std::max(78, height / 10);
+  metrics.pad = std::max(18, width / 24);
+  const auto layout = weather_card::layout(metrics, width, height, 0, weather_count, 1);
+  card(root, layout.now.x, layout.now.y, layout.now.w, layout.now.h);
+  label(root, weather_glyph(weather_condition), layout.now.x + metrics.card_pad(), layout.now.y + metrics.card_pad(), metrics.icon_h + 12, metrics.icon_h + 16, &esphome_weather_26, lv_color_hex(0x7EA2BE));
+  char value[24]; std::snprintf(value, sizeof(value), "%.0f°", weather_current);
+  label(root, value, layout.now.x + metrics.card_pad() + metrics.icon_h + 18, layout.now.y + metrics.card_pad(), 120, metrics.big_h, &lv_font_montserrat_28, lv_color_hex(0x1B1B1B));
+  label(root, weather_text(weather_condition), layout.now.x + metrics.card_pad() + metrics.icon_h + 155, layout.now.y + metrics.card_pad(), layout.now.w - 190, metrics.big_h, &lv_font_montserrat_28, lv_color_hex(0x1B1B1B));
+  if (!layout.days.empty()) {
+    card(root, layout.days.x, layout.days.y, layout.days.w, layout.days.h);
+    const int count = std::min(layout.rows, weather_count), row = std::max(1, layout.row_h);
+    for (int i = 0; i < count; ++i) {
+      const auto &day = weather_days[i]; const int y = layout.days.y + layout.rows_y + i * row;
+      label(root, day.day.c_str(), layout.days.x + metrics.card_pad(), y, 60, metrics.text_h, &lv_font_montserrat_14, lv_color_hex(0x1B1B1B));
+      label(root, weather_glyph(day.condition), layout.days.x + metrics.card_pad() + 62, y - 3, metrics.mini_h + 8, metrics.mini_h, &esphome_weather_26, lv_color_hex(0xE9A51A));
+      char temps[32]; std::snprintf(temps, sizeof(temps), "%.0f° / %.0f°", day.high, day.low);
+      label(root, temps, layout.days.x + layout.days.w - 150, y, 130, metrics.text_h, &lv_font_montserrat_14, lv_color_hex(0x1B1B1B));
+    }
+  }
+  if (!layout.heading.empty()) label(root, "Coming days", layout.heading.x, layout.heading.y, layout.heading.w, metrics.text_h, &lv_font_montserrat_14, lv_color_hex(0x6D737A));
+  // Keep navigation above the cards: the detail card may occupy the upper part of a short profile.
+  auto *nav = lv_btn_create(root); lv_obj_set_size(nav, 72, 72); lv_obj_set_pos(nav, metrics.pad, metrics.pad);
+  lv_obj_set_style_radius(nav, LV_RADIUS_CIRCLE, 0); lv_obj_set_style_bg_color(nav, lv_color_hex(0xF7F7F7), 0);
+  label(nav, "<", 0, 12, 72, 44, &lv_font_montserrat_28, lv_color_hex(0x1B1B1B));
+  label(root, "Weather", 0, metrics.pad + 8, width, 48, &lv_font_montserrat_28, lv_color_hex(0x1B1B1B));
+}
 
 void render() {
   if (!root) return;
   lv_obj_clean(root);
   lv_obj_set_style_bg_color(root, lv_color_hex(0xE7E7E7), 0);
   lv_obj_set_style_bg_opa(root, LV_OPA_COVER, 0);
-  if (has_weather) weather_render();
+  if (has_weather) weather_detail ? weather_detail_render() : weather_render();
   if (has_climate && !has_weather) {
     climate_card::Metrics metrics;
     ui::configure(dpi, "standard");
@@ -135,7 +171,7 @@ void preview_set_climate(float setpoint, float room, const char *hvac_mode) {
   target = setpoint; current = room; mode = hvac_mode ? hvac_mode : "heat"; has_climate = true; render();
 }
 void preview_clear_climate() { has_climate = false; }
-void preview_clear_weather() { weather_count = 0; has_weather = false; weather_condition.clear(); }
+void preview_clear_weather() { weather_count = 0; has_weather = false; weather_detail = false; weather_condition.clear(); }
 void preview_set_weather_current(float temperature, const char *condition) { weather_current = temperature; weather_condition = condition ? condition : ""; has_weather = true; }
 void preview_set_weather_day(int index, const char *day, const char *condition, float high, float low, float rain) {
   if (index < 0 || index >= (int)weather_days.size()) return;
@@ -144,6 +180,12 @@ void preview_set_weather_day(int index, const char *day, const char *condition, 
 void preview_set_profile(int cols, int lines) {
   columns = std::clamp(cols, 1, 12); rows = std::clamp(lines, 1, 12); render();
 }
+int preview_touch(int x, int y, int pressed) {
+  (void)x; (void)y;
+  if (pressed || !has_weather) return weather_detail ? 1 : 0;
+  weather_detail = !weather_detail; render(); return weather_detail ? 1 : 0;
+}
+void preview_back() { if (weather_detail) { weather_detail = false; render(); } }
 void preview_render() { if (display) { render(); lv_refr_now(display); lv_timer_handler(); } }
 const uint32_t *preview_frame() { return frame; }
 int preview_width() { return width; }

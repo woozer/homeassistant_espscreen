@@ -36,6 +36,6 @@ for source in $(find "$LVGL/src" -name '*.c' -print); do
   OBJECTS="$OBJECTS $object"
 done
 em++ -O2 $OBJECTS \
-  -sWASM=0 -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_FUNCTIONS='["_preview_init","_preview_set_profile","_preview_set_climate","_preview_clear_climate","_preview_clear_weather","_preview_set_weather_current","_preview_set_weather_day","_preview_render","_preview_frame","_preview_width","_preview_height"]' \
+  -sWASM=0 -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_FUNCTIONS='["_preview_init","_preview_set_profile","_preview_set_climate","_preview_clear_climate","_preview_clear_weather","_preview_set_weather_current","_preview_set_weather_day","_preview_touch","_preview_back","_preview_render","_preview_frame","_preview_width","_preview_height"]' \
   -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8"]' -sENVIRONMENT=web -sMODULARIZE=1 -sEXPORT_ES6=1 \
   -o "$OUT/firmware_preview.js"

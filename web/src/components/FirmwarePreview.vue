@@ -12,6 +12,8 @@ let module: any = null;
 let raf = 0;
 const page = ref(0);
 const pointerStart = ref<number | null>(null);
+const pointerStartY = ref<number | null>(null);
+const detailOpen = ref(false);
 const pageCount = computed(() => Math.max(1, props.pages || 1));
 const configuredTiles = computed(() => (props.tiles && props.tiles.length ? props.tiles : state.layout?.tiles || []));
 const pageTiles = computed(() => configuredTiles.value.filter((tile) => Math.floor(tile.slot / (props.columns * props.rows)) === page.value));
@@ -48,11 +50,21 @@ async function loadForecasts() {
     catch { forecasts.value[tile.entity] = []; }
   }));
 }
-function swipeStart(event: PointerEvent) { pointerStart.value = event.clientX; }
+function swipeStart(event: PointerEvent) { pointerStart.value = event.clientX; pointerStartY.value = event.clientY; }
 function swipeEnd(event: PointerEvent) {
   if (pointerStart.value === null) return;
-  const delta = event.clientX - pointerStart.value; pointerStart.value = null;
-  if (Math.abs(delta) < 35) return;
+  const startX = pointerStart.value, startY = pointerStartY.value ?? event.clientY;
+  const delta = event.clientX - startX; pointerStart.value = null; pointerStartY.value = null;
+  if (Math.abs(delta) < 35 && Math.abs(event.clientY - startY) < 35) {
+    if (module && canvas.value) {
+      const rect = canvas.value.getBoundingClientRect();
+      const x = Math.round((event.clientX - rect.left) * props.width / rect.width);
+      const y = Math.round((event.clientY - rect.top) * props.height / rect.height);
+      detailOpen.value = !!module._preview_touch(x, y, 0);
+      paint();
+    }
+    return;
+  }
   page.value = Math.max(0, Math.min(pageCount.value - 1, page.value + (delta < 0 ? 1 : -1)));
 }
 watch(pageCount, (count) => { if (page.value >= count) page.value = count - 1; });
@@ -64,6 +76,7 @@ function paint() {
   const climate = configuredTiles.value.find((tile) => domainOf(tile) === "climate");
   if (climate) module._preview_set_climate(props.target ?? 21, props.room ?? 20, props.mode || "heat");
   module._preview_clear_weather();
+  if (!configuredTiles.value.some((tile) => domainOf(tile) === "weather")) detailOpen.value = false;
   const weather = configuredTiles.value.find((tile) => domainOf(tile) === "weather");
   if (weather) {
     const live = stateOf(weather);
@@ -99,7 +112,7 @@ onBeforeUnmount(() => cancelAnimationFrame(raf));
 <template>
   <div class="firmware-preview" :style="{ aspectRatio: `${width} / ${height}` }" @pointerdown="swipeStart" @pointerup="swipeEnd">
     <canvas ref="canvas" :width="width" :height="height" aria-label="LVGL firmware preview"></canvas>
-    <div class="firmware-overlay" :style="{ gridTemplateColumns: `repeat(${columns}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }" aria-label="Configured tiles">
+    <div v-if="!detailOpen" class="firmware-overlay" :style="{ gridTemplateColumns: `repeat(${columns}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }" aria-label="Configured tiles">
       <div v-for="tile in visualTiles" :key="`${tile.entity}-${tile.slot}`"
         class="firmware-tile" :class="{ 'firmware-weather-tile': domainOf(tile) === 'weather' && displayOf(tile) === 'forecast' }"
         :style="{ gridColumn: `${(tile.slot % columns) + 1} / span ${tile.options?.size === 'wide' || (domainOf(tile) === 'weather' && displayOf(tile) === 'forecast') ? Math.min(2, columns - (tile.slot % columns)) : tile.options?.size === 'full' ? columns : 1}`, gridRow: `${Math.floor((tile.slot % (columns * rows)) / columns) + 1}` }">
