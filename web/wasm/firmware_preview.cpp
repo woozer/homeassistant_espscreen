@@ -9,6 +9,7 @@
 #include "../../components/smart_display/climate_card.h"
 #include "../../components/smart_display/weather_card.h"
 #include "../../components/smart_display/renderer_host_api.h"
+#include "generated/firmware_renderer_manifest.h"
 #include "generated/esphome_weather_26.c"
 
 static_assert(ESP_SCREEN_RENDERER_ABI == 1, "Update the WebAssembly host adapter for the renderer ABI change");

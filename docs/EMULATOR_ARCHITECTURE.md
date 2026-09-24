@@ -44,5 +44,10 @@ The C boundary is declared in `components/smart_display/renderer_host_api.h` and
 The ESP32 and WebAssembly adapters must compile against that header. Changing the ABI requires both targets to be
 updated and prevents an old preview adapter from being mistaken for a current firmware renderer.
 
+The WASM build also embeds a SHA-256 fingerprint of the renderer source files in
+`web/wasm/generated/firmware_renderer_manifest.h`. Changing the firmware renderer therefore changes the generated
+host artifact even before the host implementation is updated; CI can use that fingerprint to reject stale preview
+bundles.
+
 The profile carries resolution, DPI, grid dimensions and board capabilities. No 720 × 720 or 3 × 3 assumption belongs
 inside the renderer.

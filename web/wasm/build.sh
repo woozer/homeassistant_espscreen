@@ -23,6 +23,7 @@ if [ -n "${ESPHOME_GENERATED_MAIN:-}" ]; then
   python3 "$ROOT/web/wasm/generate_esphome_weather_font.py" \
     "$ESPHOME_GENERATED_MAIN" "$ROOT/web/wasm/generated/esphome_weather_26.c"
 fi
+python3 "$ROOT/web/wasm/generate_renderer_manifest.py" "$ROOT"
 COMMON_FLAGS="-DLV_CONF_INCLUDE_SIMPLE -DLV_FONT_FMT_TXT_LARGE=1 -I$ROOT/web/wasm -I$LVGL -I$LVGL/src"
 em++ -O2 -std=c++17 $COMMON_FLAGS -c \
   "$ROOT/web/wasm/firmware_preview.cpp" -o "$ROOT/../.cache/firmware_preview-large.o"
