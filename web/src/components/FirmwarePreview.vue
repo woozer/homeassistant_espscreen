@@ -60,7 +60,12 @@ function swipeEnd(event: PointerEvent) {
       const rect = canvas.value.getBoundingClientRect();
       const x = Math.round((event.clientX - rect.left) * props.width / rect.width);
       const y = Math.round((event.clientY - rect.top) * props.height / rect.height);
-      detailOpen.value = !!module._preview_touch(x, y, 0);
+      if (detailOpen.value) {
+        module._preview_back();
+        detailOpen.value = false;
+      } else {
+        detailOpen.value = !!module._preview_touch(x, y, 0);
+      }
       paint();
     }
     return;
@@ -68,16 +73,17 @@ function swipeEnd(event: PointerEvent) {
   page.value = Math.max(0, Math.min(pageCount.value - 1, page.value + (delta < 0 ? 1 : -1)));
 }
 watch(pageCount, (count) => { if (page.value >= count) page.value = count - 1; });
+watch(page, () => { detailOpen.value = false; if (module) module._preview_back(); });
 
 function paint() {
   if (!module || !canvas.value) return;
   module._preview_set_profile(props.columns, props.rows);
   module._preview_clear_climate();
-  const climate = configuredTiles.value.find((tile) => domainOf(tile) === "climate");
+  const climate = pageTiles.value.find((tile) => domainOf(tile) === "climate");
   if (climate) module._preview_set_climate(props.target ?? 21, props.room ?? 20, props.mode || "heat");
   module._preview_clear_weather();
-  if (!configuredTiles.value.some((tile) => domainOf(tile) === "weather")) detailOpen.value = false;
-  const weather = configuredTiles.value.find((tile) => domainOf(tile) === "weather");
+  if (!pageTiles.value.some((tile) => domainOf(tile) === "weather")) detailOpen.value = false;
+  const weather = pageTiles.value.find((tile) => domainOf(tile) === "weather");
   if (weather) {
     const live = stateOf(weather);
     module.ccall("preview_set_weather_current", "void", ["number", "string"], [Number(live?.a?.temperature ?? 0), weatherCondition(weather)]);
